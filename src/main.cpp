@@ -3,6 +3,7 @@
 #include  <emscripten.h>
 #include <emscripten/html5.h>
 #include <math.h>
+#include <pthread.h>
 
 typedef struct
 {
@@ -156,6 +157,14 @@ void Draw ( ESContext *esContext )
 
 ESContext esContext;
 UserData  userData;
+
+class Thing {
+    public: 
+     Thing(){printf("construct\n");};
+     ~Thing(){ printf("destruct\n");};
+};
+
+static Thing globalThing;
 
 int main ( int argc, char *argv[] )
 {
