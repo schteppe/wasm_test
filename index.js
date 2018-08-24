@@ -1749,7 +1749,8 @@ integrateWasmJS();
 
 // === Body ===
 
-var ASM_CONSTS = [function() { postMessage({ cmd: 'processQueuedMainThreadWork' }) },
+var ASM_CONSTS = [function() { FS.mkdir('/working1'); FS.mount(IDBFS, {}, '/working1'); console.log("asdasd"); FS.syncfs(true, function (err) { assert(!err); ccall('test', 'v'); }); },
+ function() { postMessage({ cmd: 'processQueuedMainThreadWork' }) },
  function() { return !!(Module['canvas']) },
  function() { Module['noExitRuntime'] = true }];
 
@@ -1762,7 +1763,7 @@ function _emscripten_asm_const_i(code) {
 
 STATIC_BASE = GLOBAL_BASE;
 
-STATICTOP = STATIC_BASE + 9040;
+STATICTOP = STATIC_BASE + 9936;
 /* global initializers */ if (!ENVIRONMENT_IS_PTHREAD) __ATINIT__.push({ func: function() { __GLOBAL__sub_I_main_cpp() } }, { func: function() { ___emscripten_pthread_data_constructor() } });
 
 
@@ -1773,7 +1774,7 @@ memoryInitializer = "index.html.mem";
 
 
 
-var STATIC_BUMP = 9040;
+var STATIC_BUMP = 9936;
 Module["STATIC_BASE"] = STATIC_BASE;
 Module["STATIC_BUMP"] = STATIC_BUMP;
 
@@ -6100,12 +6101,92 @@ function copyTempDouble(ptr) {
   }
   }
 
+  function ___syscall145(which, varargs) {if (ENVIRONMENT_IS_PTHREAD) { return _emscripten_sync_run_in_main_thread_2(138, 145, varargs) }
+  SYSCALLS.varargs = varargs;
+  try {
+   // readv
+      var stream = SYSCALLS.getStreamFromFD(), iov = SYSCALLS.get(), iovcnt = SYSCALLS.get();
+      return SYSCALLS.doReadv(stream, iov, iovcnt);
+    } catch (e) {
+    if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
+    return -e.errno;
+  }
+  }
+
   function ___syscall146(which, varargs) {if (ENVIRONMENT_IS_PTHREAD) { return _emscripten_sync_run_in_main_thread_2(138, 146, varargs) }
   SYSCALLS.varargs = varargs;
   try {
    // writev
       var stream = SYSCALLS.getStreamFromFD(), iov = SYSCALLS.get(), iovcnt = SYSCALLS.get();
       return SYSCALLS.doWritev(stream, iov, iovcnt);
+    } catch (e) {
+    if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
+    return -e.errno;
+  }
+  }
+
+  function ___syscall221(which, varargs) {if (ENVIRONMENT_IS_PTHREAD) { return _emscripten_sync_run_in_main_thread_2(138, 221, varargs) }
+  SYSCALLS.varargs = varargs;
+  try {
+   // fcntl64
+      var stream = SYSCALLS.getStreamFromFD(), cmd = SYSCALLS.get();
+      switch (cmd) {
+        case 0: {
+          var arg = SYSCALLS.get();
+          if (arg < 0) {
+            return -ERRNO_CODES.EINVAL;
+          }
+          var newStream;
+          newStream = FS.open(stream.path, stream.flags, 0, arg);
+          return newStream.fd;
+        }
+        case 1:
+        case 2:
+          return 0;  // FD_CLOEXEC makes no sense for a single process.
+        case 3:
+          return stream.flags;
+        case 4: {
+          var arg = SYSCALLS.get();
+          stream.flags |= arg;
+          return 0;
+        }
+        case 12:
+        case 12: {
+          var arg = SYSCALLS.get();
+          var offset = 0;
+          // We're always unlocked.
+          HEAP16[(((arg)+(offset))>>1)]=2;
+          return 0;
+        }
+        case 13:
+        case 14:
+        case 13:
+        case 14:
+          return 0; // Pretend that the locking is successful.
+        case 16:
+        case 8:
+          return -ERRNO_CODES.EINVAL; // These are for sockets. We don't have them fully implemented yet.
+        case 9:
+          // musl trusts getown return values, due to a bug where they must be, as they overlap with errors. just return -1 here, so fnctl() returns that, and we set errno ourselves.
+          ___setErrNo(ERRNO_CODES.EINVAL);
+          return -1;
+        default: {
+          return -ERRNO_CODES.EINVAL;
+        }
+      }
+    } catch (e) {
+    if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
+    return -e.errno;
+  }
+  }
+
+  function ___syscall5(which, varargs) {if (ENVIRONMENT_IS_PTHREAD) { return _emscripten_sync_run_in_main_thread_2(138, 5, varargs) }
+  SYSCALLS.varargs = varargs;
+  try {
+   // open
+      var pathname = SYSCALLS.getStr(), flags = SYSCALLS.get(), mode = SYSCALLS.get() // optional TODO
+      var stream = FS.open(pathname, flags, mode);
+      return stream.fd;
     } catch (e) {
     if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
     return -e.errno;
@@ -6184,6 +6265,1823 @@ function copyTempDouble(ptr) {
 
   function _abort() {
       Module['abort']();
+    }
+
+  
+  var AL={QUEUE_INTERVAL:25,QUEUE_LOOKAHEAD:0.1,DEVICE_NAME:"Emscripten OpenAL",CAPTURE_DEVICE_NAME:"Emscripten OpenAL capture",ALC_EXTENSIONS:{ALC_SOFT_pause_device:true,ALC_SOFT_HRTF:true},AL_EXTENSIONS:{AL_EXT_float32:true,AL_SOFT_loop_points:true,AL_SOFT_source_length:true,AL_EXT_source_distance_model:true,AL_SOFT_source_spatialize:true},_alcErr:0,alcErr:0,deviceRefCounts:{},alcStringCache:{},paused:false,stringCache:{},contexts:{},currentCtx:null,buffers:{0:{id:0,refCount:0,audioBuf:null,frequency:0,bytesPerSample:2,channels:1,length:0}},paramArray:[],_nextId:1,newId:function () {
+        return AL.freeIds.length > 0 ? AL.freeIds.pop() : AL._nextId++;
+      },freeIds:[],scheduleContextAudio:function (ctx) {
+        // If we are animating using the requestAnimationFrame method, then the main loop does not run when in the background.
+        // To give a perfect glitch-free audio stop when switching from foreground to background, we need to avoid updating
+        // audio altogether when in the background, so detect that case and kill audio buffer streaming if so.
+        if (Browser.mainLoop.timingMode === 1 /* EM_TIMING_RAF */ && document['visibilityState'] != 'visible') {
+          return;
+        }
+  
+        for (var i in ctx.sources) {
+          AL.scheduleSourceAudio(ctx.sources[i]);
+        }
+      },scheduleSourceAudio:function (src, lookahead) {
+        // See comment on scheduleContextAudio above.
+        if (Browser.mainLoop.timingMode === 1 /*EM_TIMING_RAF*/ && document['visibilityState'] != 'visible') {
+          return;
+        }
+        if (src.state !== 0x1012 /* AL_PLAYING */) {
+          return;
+        }
+  
+        var currentTime = AL.updateSourceTime(src);
+  
+        var startTime = src.bufStartTime;
+        var startOffset = src.bufOffset;
+        var bufCursor = src.bufsProcessed;
+  
+        // Advance past any audio that is already scheduled
+        for (var i = 0; i < src.audioQueue.length; i++) {
+          var audioSrc = src.audioQueue[i];
+          startTime = audioSrc._startTime + audioSrc._duration;
+          startOffset = 0.0;
+          bufCursor += audioSrc._skipCount + 1;
+        }
+  
+        if (!lookahead) {
+          lookahead = AL.QUEUE_LOOKAHEAD;
+        }
+        var lookaheadTime = currentTime + lookahead;
+        var skipCount = 0;
+        while (startTime < lookaheadTime) {
+          if (bufCursor >= src.bufQueue.length) {
+            if (src.looping) {
+              bufCursor %= src.bufQueue.length;
+            } else {
+              break;
+            }
+          }
+  
+          var buf = src.bufQueue[bufCursor % src.bufQueue.length];
+          // If the buffer contains no data, skip it
+          if (buf.length === 0) {
+            skipCount++;
+            // If we've gone through the whole queue and everything is 0 length, just give up
+            if (skipCount === src.bufQueue.length) {
+              break;
+            }
+          } else {
+            var audioSrc = src.context.audioCtx.createBufferSource();
+            audioSrc.buffer = buf.audioBuf;
+            audioSrc.playbackRate.value = src.playbackRate;
+            if (buf.audioBuf._loopStart || buf.audioBuf._loopEnd) {
+              audioSrc.loopStart = buf.audioBuf._loopStart;
+              audioSrc.loopEnd = buf.audioBuf._loopEnd;
+            }
+  
+            var duration = 0.0;
+            // If the source is a looping static buffer, use native looping for gapless playback
+            if (src.type === 0x1028 /* AL_STATIC */ && src.looping) {
+              duration = Number.POSITIVE_INFINITY;
+              audioSrc.loop = true;
+              if (buf.audioBuf._loopStart) {
+                audioSrc.loopStart = buf.audioBuf._loopStart;
+              }
+              if (buf.audioBuf._loopEnd) {
+                audioSrc.loopEnd = buf.audioBuf._loopEnd;
+              }
+            } else {
+              duration = (buf.audioBuf.duration - startOffset) / src.playbackRate;
+            }
+  
+            audioSrc._startOffset = startOffset;
+            audioSrc._duration = duration;
+            audioSrc._skipCount = skipCount;
+            skipCount = 0;
+  
+            audioSrc.connect(src.gain);
+  
+            if (typeof(audioSrc.start) !== 'undefined') {
+              // Sample the current time as late as possible to mitigate drift
+              startTime = Math.max(startTime, src.context.audioCtx.currentTime);
+              audioSrc.start(startTime, startOffset);
+            } else if (typeof(audioSrc.noteOn) !== 'undefined') {
+              startTime = Math.max(startTime, src.context.audioCtx.currentTime);
+              audioSrc.noteOn(startTime);
+            }
+            audioSrc._startTime = startTime;
+            src.audioQueue.push(audioSrc);
+  
+            startTime += duration;
+          }
+  
+          startOffset = 0.0;
+          bufCursor++;
+        }
+      },updateSourceTime:function (src) {
+        var currentTime = src.context.audioCtx.currentTime;
+        if (src.state !== 0x1012 /* AL_PLAYING */) {
+          return currentTime;
+        }
+  
+        // if the start time is unset, determine it based on the current offset.
+        // This will be the case when a source is resumed after being paused, and
+        // allows us to pretend that the source actually started playing some time
+        // in the past such that it would just now have reached the stored offset.
+        if (!isFinite(src.bufStartTime)) {
+          src.bufStartTime = currentTime - src.bufOffset / src.playbackRate;
+          src.bufOffset = 0.0;
+        }
+  
+        var nextStartTime = 0.0;
+        while (src.audioQueue.length) {
+          var audioSrc = src.audioQueue[0];
+          src.bufsProcessed += audioSrc._skipCount;
+          nextStartTime = audioSrc._startTime + audioSrc._duration; // n.b. audioSrc._duration already factors in playbackRate, so no divide by src.playbackRate on it.
+  
+          if (currentTime < nextStartTime) {
+            break;
+          }
+  
+          src.audioQueue.shift();
+          src.bufStartTime = nextStartTime;
+          src.bufOffset = 0.0;
+          src.bufsProcessed++;
+        }
+  
+        if (src.bufsProcessed >= src.bufQueue.length && !src.looping) {
+          // The source has played its entire queue and is non-looping, so just mark it as stopped.
+          AL.setSourceState(src, 0x1014 /* AL_STOPPED */);
+        } else if (src.type === 0x1028 /* AL_STATIC */ && src.looping) {
+          // If the source is a looping static buffer, determine the buffer offset based on the loop points
+          var buf = src.bufQueue[0];
+          if (buf.length === 0) {
+            src.bufOffset = 0.0;
+          } else {
+            var delta = (currentTime - src.bufStartTime) * src.playbackRate;
+            var loopStart = buf.audioBuf._loopStart || 0.0;
+            var loopEnd = buf.audioBuf._loopEnd || buf.audioBuf.duration;
+            if (loopEnd <= loopStart) {
+              loopEnd = buf.audioBuf.duration;
+            }
+  
+            if (delta < loopEnd) {
+              src.bufOffset = delta;
+            } else {
+              src.bufOffset = loopStart + (delta - loopStart) % (loopEnd - loopStart);
+            }
+          }
+        } else if (src.audioQueue[0]) {
+          // The source is still actively playing, so we just need to calculate where we are in the current buffer
+          // so it can be remembered if the source gets paused.
+          src.bufOffset = (currentTime - src.audioQueue[0]._startTime) * src.playbackRate;
+        } else {
+          // The source hasn't finished yet, but there is no scheduled audio left for it. This can be because
+          // the source has just been started/resumed, or due to an underrun caused by a long blocking operation.
+          // We need to determine what state we would be in by this point in time so that when we next schedule
+          // audio playback, it will be just as if no underrun occurred.
+  
+          if (src.type !== 0x1028 /* AL_STATIC */ && src.looping) {
+            // if the source is a looping buffer queue, let's first calculate the queue duration, so we can
+            // quickly fast forward past any full loops of the queue and only worry about the remainder.
+            var srcDuration = AL.sourceDuration(src) / src.playbackRate;
+            if (srcDuration > 0.0) {
+              src.bufStartTime += Math.floor((currentTime - src.bufStartTime) / srcDuration) * srcDuration;
+            }
+          }
+  
+          // Since we've already skipped any full-queue loops if there were any, we just need to find
+          // out where in the queue the remaining time puts us, which won't require stepping through the
+          // entire queue more than once.
+          for (var i = 0; i < src.bufQueue.length; i++) {
+            if (src.bufsProcessed >= src.bufQueue.length) {
+              if (src.looping) {
+                src.bufsProcessed %= src.bufQueue.length;
+              } else {
+                AL.setSourceState(src, 0x1014 /* AL_STOPPED */);
+                break;
+              }
+            }
+  
+            var buf = src.bufQueue[src.bufsProcessed];
+            if (buf.length > 0) {
+              nextStartTime = src.bufStartTime + buf.audioBuf.duration / src.playbackRate;
+  
+              if (currentTime < nextStartTime) {
+                src.bufOffset = (currentTime - src.bufStartTime) * src.playbackRate;
+                break;
+              }
+  
+              src.bufStartTime = nextStartTime;
+            }
+  
+            src.bufOffset = 0.0;
+            src.bufsProcessed++;
+          }
+        }
+  
+        return currentTime;
+      },cancelPendingSourceAudio:function (src) {
+        AL.updateSourceTime(src);
+  
+        for (var i = 1; i < src.audioQueue.length; i++) {
+          var audioSrc = src.audioQueue[i];
+          audioSrc.stop();
+        }
+  
+        if (src.audioQueue.length > 1) {
+          src.audioQueue.length = 1;
+        }
+      },stopSourceAudio:function (src) {
+        for (var i = 0; i < src.audioQueue.length; i++) {
+          src.audioQueue[i].stop();
+        }
+        src.audioQueue.length = 0;
+      },setSourceState:function (src, state) {
+        if (state === 0x1012 /* AL_PLAYING */) {
+          if (src.state === 0x1012 /* AL_PLAYING */ || src.state == 0x1014 /* AL_STOPPED */) {
+            src.bufsProcessed = 0;
+            src.bufOffset = 0.0;
+          } else {
+          }
+  
+          AL.stopSourceAudio(src);
+  
+          src.state = 0x1012 /* AL_PLAYING */;
+          src.bufStartTime = Number.NEGATIVE_INFINITY;
+          AL.scheduleSourceAudio(src);
+        } else if (state === 0x1013 /* AL_PAUSED */) {
+          if (src.state === 0x1012 /* AL_PLAYING */) {
+            // Store off the current offset to restore with on resume.
+            AL.updateSourceTime(src);
+            AL.stopSourceAudio(src);
+  
+            src.state = 0x1013 /* AL_PAUSED */;
+          }
+        } else if (state === 0x1014 /* AL_STOPPED */) {
+          if (src.state !== 0x1011 /* AL_INITIAL */) {
+            src.state = 0x1014 /* AL_STOPPED */;
+            src.bufsProcessed = src.bufQueue.length;
+            src.bufStartTime = Number.NEGATIVE_INFINITY;
+            src.bufOffset = 0.0;
+            AL.stopSourceAudio(src);
+          }
+        } else if (state === 0x1011 /* AL_INITIAL */) {
+          if (src.state !== 0x1011 /* AL_INITIAL */) {
+            src.state = 0x1011 /* AL_INITIAL */;
+            src.bufsProcessed = 0;
+            src.bufStartTime = Number.NEGATIVE_INFINITY;
+            src.bufOffset = 0.0;
+            AL.stopSourceAudio(src);
+          }
+        }
+      },initSourcePanner:function (src) {
+        if (src.type === 0x1030 /* AL_UNDETERMINED */) {
+          return;
+        }
+  
+        // Find the first non-zero buffer in the queue to determine the proper format
+        var templateBuf = AL.buffers[0];
+        for (var i = 0; i < src.bufQueue.length; i++) {
+          if (src.bufQueue[i].id !== 0) {
+            templateBuf = src.bufQueue[i];
+            break;
+          }
+        }
+        // Create a panner if AL_SOURCE_SPATIALIZE_SOFT is set to true, or alternatively if it's set to auto and the source is mono
+        if (src.spatialize === 1 /* AL_TRUE */ || (src.spatialize === 2 /* AL_AUTO_SOFT */ && templateBuf.channels === 1)) {
+          if (src.panner) {
+            return;
+          }
+          src.panner = src.context.audioCtx.createPanner();
+  
+          AL.updateSourceGlobal(src);
+          AL.updateSourceSpace(src);
+  
+          src.panner.connect(src.context.gain);
+          src.gain.disconnect();
+          src.gain.connect(src.panner);
+        } else {
+          if (!src.panner) {
+            return;
+          }
+  
+          src.panner.disconnect();
+          src.gain.disconnect();
+          src.gain.connect(src.context.gain);
+          src.panner = null;
+        }
+      },updateContextGlobal:function (ctx) {
+        for (var i in ctx.sources) {
+          AL.updateSourceGlobal(ctx.sources[i]);
+        }
+      },updateSourceGlobal:function (src) {
+        var panner = src.panner;
+        if (!panner) {
+          return;
+        }
+  
+        panner.refDistance = src.refDistance;
+        panner.maxDistance = src.maxDistance;
+        panner.rolloffFactor = src.rolloffFactor;
+  
+        panner.panningModel = src.context.hrtf ? 'HRTF' : 'equalpower';
+  
+        // Use the source's distance model if AL_SOURCE_DISTANCE_MODEL is enabled
+        var distanceModel = src.context.sourceDistanceModel ? src.distanceModel : src.context.distanceModel;
+        switch (distanceModel) {
+        case 0 /* AL_NONE */:
+          panner.distanceModel = 'inverse';
+          panner.refDistance = 3.40282e38 /* FLT_MAX */;
+          break;
+        case 0xd001 /* AL_INVERSE_DISTANCE */:
+        case 0xd002 /* AL_INVERSE_DISTANCE_CLAMPED */:
+          panner.distanceModel = 'inverse';
+          break;
+        case 0xd003 /* AL_LINEAR_DISTANCE */:
+        case 0xd004 /* AL_LINEAR_DISTANCE_CLAMPED */:
+          panner.distanceModel = 'linear';
+          break;
+        case 0xd005 /* AL_EXPONENT_DISTANCE */:
+        case 0xd006 /* AL_EXPONENT_DISTANCE_CLAMPED */:
+          panner.distanceModel = 'exponential';
+          break;
+        }
+      },updateListenerSpace:function (ctx) {
+        var listener = ctx.audioCtx.listener;
+        if (listener.positionX) {
+          listener.positionX.value = ctx.listener.position[0];
+          listener.positionY.value = ctx.listener.position[1];
+          listener.positionZ.value = ctx.listener.position[2];
+        } else {
+          listener.setPosition(ctx.listener.position[0], ctx.listener.position[1], ctx.listener.position[2]);
+        }
+        if (listener.forwardX) {
+          listener.forwardX.value = ctx.listener.direction[0];
+          listener.forwardY.value = ctx.listener.direction[1];
+          listener.forwardZ.value = ctx.listener.direction[2];
+          listener.upX.value = ctx.listener.up[0];
+          listener.upY.value = ctx.listener.up[1];
+          listener.upZ.value = ctx.listener.up[2];
+        } else {
+          listener.setOrientation(
+            ctx.listener.direction[0], ctx.listener.direction[1], ctx.listener.direction[2],
+            ctx.listener.up[0], ctx.listener.up[1], ctx.listener.up[2]);
+        }
+  
+        // Update sources that are relative to the listener
+        for (var i in ctx.sources) {
+          AL.updateSourceSpace(ctx.sources[i]);
+        }
+      },updateSourceSpace:function (src) {
+        if (!src.panner) {
+          return;
+        }
+        var panner = src.panner;
+  
+        var posX = src.position[0];
+        var posY = src.position[1];
+        var posZ = src.position[2];
+        var dirX = src.direction[0];
+        var dirY = src.direction[1];
+        var dirZ = src.direction[2];
+  
+        var listener = src.context.listener;
+        var lPosX = listener.position[0];
+        var lPosY = listener.position[1];
+        var lPosZ = listener.position[2];
+  
+        // WebAudio does spatialization in world-space coordinates, meaning both the buffer sources and
+        // the listener position are in the same absolute coordinate system relative to a fixed origin.
+        // By default, OpenAL works this way as well, but it also provides a "listener relative" mode, where
+        // a buffer source's coordinate are interpreted not in absolute world space, but as being relative
+        // to the listener object itself, so as the listener moves the source appears to move with it
+        // with no update required. Since web audio does not support this mode, we must transform the source
+        // coordinates from listener-relative space to absolute world space.
+        //
+        // We do this via affine transformation matrices applied to the source position and source direction.
+        // A change-of-basis converts from listener-space displacements to world-space displacements,
+        // which must be done for both the source position and direction. Lastly, the source position must be
+        // added to the listener position to get the final source position, since the source position represents
+        // a displacement from the listener.
+        if (src.relative) {
+          // Negate the listener direction since forward is -Z.
+          var lBackX = -listener.direction[0];
+          var lBackY = -listener.direction[1];
+          var lBackZ = -listener.direction[2];
+          var lUpX = listener.up[0];
+          var lUpY = listener.up[1];
+          var lUpZ = listener.up[2];
+  
+          function inverseMagnitude(x, y, z) {
+            var length = Math.sqrt(x * x + y * y + z * z);
+  
+            if (length < Number.EPSILON) {
+              return 0.0;
+            }
+  
+            return 1.0 / length;
+          }
+  
+          // Normalize the Back vector
+          var invMag = inverseMagnitude(lBackX, lBackY, lBackZ);
+          lBackX *= invMag;
+          lBackY *= invMag;
+          lBackZ *= invMag;
+  
+          // ...and the Up vector
+          var invMag = inverseMagnitude(lUpX, lUpY, lUpZ);
+          lUpX *= invMag;
+          lUpY *= invMag;
+          lUpZ *= invMag;
+  
+          // Calculate the Right vector as the cross product of the Up and Back vectors
+          var lRightX = (lUpY * lBackZ - lUpZ * lBackY);
+          var lRightY = (lUpZ * lBackX - lUpX * lBackZ);
+          var lRightZ = (lUpX * lBackY - lUpY * lBackX);
+  
+          // Back and Up might not be exactly perpendicular, so the cross product also needs normalization
+          var invMag = inverseMagnitude(lRightX, lRightY, lRightZ);
+          lRightX *= invMag;
+          lRightY *= invMag;
+          lRightZ *= invMag;
+  
+          // Recompute Up from the now orthonormal Right and Back vectors so we have a fully orthonormal basis
+          var lUpX = (lBackY * lRightZ - lBackZ * lRightY);
+          var lUpY = (lBackZ * lRightX - lBackX * lRightZ);
+          var lUpZ = (lBackX * lRightY - lBackY * lRightX);
+  
+          var oldX = dirX;
+          var oldY = dirY;
+          var oldZ = dirZ;
+  
+          // Use our 3 vectors to apply a change-of-basis matrix to the source direction
+          dirX = oldX * lRightX + oldY * lUpX + oldZ * lBackX;
+          dirY = oldX * lRightY + oldY * lUpY + oldZ * lBackY;
+          dirZ = oldX * lRightZ + oldY * lUpZ + oldZ * lBackZ;
+  
+          var oldX = posX;
+          var oldY = posY;
+          var oldZ = posZ;
+  
+          // ...and to the source position
+          posX = oldX * lRightX + oldY * lUpX + oldZ * lBackX;
+          posY = oldX * lRightY + oldY * lUpY + oldZ * lBackY;
+          posZ = oldX * lRightZ + oldY * lUpZ + oldZ * lBackZ;
+  
+          // The change-of-basis corrects the orientation, but the origin is still the listener.
+          // Translate the source position by the listener position to finish.
+          posX += lPosX;
+          posY += lPosY;
+          posZ += lPosZ;
+        }
+  
+        if (panner.positionX) {
+          panner.positionX.value = posX;
+          panner.positionY.value = posY;
+          panner.positionZ.value = posZ;
+        } else {
+          panner.setPosition(posX, posY, posZ);
+        }
+        if (panner.orientationX) {
+          panner.orientationX.value = dirX;
+          panner.orientationY.value = dirY;
+          panner.orientationZ.value = dirZ;
+        } else {
+          panner.setOrientation(dirX, dirY, dirZ);
+        }
+  
+        var oldShift = src.dopplerShift;
+        var velX = src.velocity[0];
+        var velY = src.velocity[1];
+        var velZ = src.velocity[2];
+        var lVelX = listener.velocity[0];
+        var lVelY = listener.velocity[1];
+        var lVelZ = listener.velocity[2];
+        if (posX === lPosX && posY === lPosY && posZ === lPosZ
+          || velX === lVelX && velY === lVelY && velZ === lVelZ)
+        {
+          src.dopplerShift = 1.0;
+        } else {
+          // Doppler algorithm from 1.1 spec
+          var speedOfSound = src.context.speedOfSound;
+          var dopplerFactor = src.context.dopplerFactor;
+  
+          var slX = lPosX - posX;
+          var slY = lPosY - posY;
+          var slZ = lPosZ - posZ;
+  
+          var magSl = Math.sqrt(slX * slX + slY * slY + slZ * slZ);
+          var vls = (slX * lVelX + slY * lVelY + slZ * lVelZ) / magSl;
+          var vss = (slX * velX + slY * velY + slZ * velZ) / magSl;
+  
+          vls = Math.min(vls, speedOfSound / dopplerFactor);
+          vss = Math.min(vss, speedOfSound / dopplerFactor);
+  
+          src.dopplerShift = (speedOfSound - dopplerFactor * vls) / (speedOfSound - dopplerFactor * vss);
+        }
+        if (src.dopplerShift !== oldShift) {
+          AL.updateSourceRate(src);
+        }
+      },updateSourceRate:function (src) {
+        if (src.state === 0x1012 /* AL_PLAYING */) {
+          // clear scheduled buffers
+          AL.cancelPendingSourceAudio(src);
+  
+          var audioSrc = src.audioQueue[0];
+          if (!audioSrc) {
+            return; // It is possible that AL.scheduleContextAudio() has not yet fed the next buffer, if so, skip.
+          }
+  
+          var duration;
+          if (src.type === 0x1028 /* AL_STATIC */ && src.looping) {
+            duration = Number.POSITIVE_INFINITY;
+          } else {
+            // audioSrc._duration is expressed after factoring in playbackRate, so when changing playback rate, need
+            // to recompute/rescale the rate to the new playback speed.
+            duration = (audioSrc.buffer.duration - audioSrc._startOffset) / src.playbackRate;
+          }
+  
+          audioSrc._duration = duration;
+          audioSrc.playbackRate.value = src.playbackRate;
+  
+          // reschedule buffers with the new playbackRate
+          AL.scheduleSourceAudio(src);
+        }
+      },sourceDuration:function (src) {
+        var length = 0.0;
+        for (var i = 0; i < src.bufQueue.length; i++) {
+          var audioBuf = src.bufQueue[i].audioBuf;
+          length += audioBuf ? audioBuf.duration : 0.0;
+        }
+        return length;
+      },sourceTell:function (src) {
+        AL.updateSourceTime(src);
+  
+        var offset = 0.0;
+        for (var i = 0; i < src.bufsProcessed; i++) {
+          offset += src.bufQueue[i].audioBuf.duration;
+        }
+        offset += src.bufOffset;
+  
+        return offset;
+      },sourceSeek:function (src, offset) {
+        var playing = src.state == 0x1012 /* AL_PLAYING */;
+        if (playing) {
+          AL.setSourceState(src, 0x1011 /* AL_INITIAL */);
+        }
+  
+        src.bufsProcessed = 0;
+        while (offset > src.bufQueue[src.bufsProcessed].audioBuf.duration) {
+          offset -= src.bufQueue[src.bufsProcessed].audiobuf.duration;
+          src.bufsProcessed++;
+        }
+  
+        src.bufOffset = offset;
+        if (playing) {
+          AL.setSourceState(src, 0x1012 /* AL_PLAYING */);
+        }
+      },getGlobalParam:function (funcname, param) {
+        if (!AL.currentCtx) {
+          return null;
+        }
+  
+        switch (param) {
+        case 0xC000 /* AL_DOPPLER_FACTOR */:
+          return AL.currentCtx.dopplerFactor;
+        case 0xC003 /* AL_SPEED_OF_SOUND */:
+          return AL.currentCtx.speedOfSound;
+        case 0xD000 /* AL_DISTANCE_MODEL */:
+          return AL.currentCtx.distanceModel;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return null;
+        }
+      },setGlobalParam:function (funcname, param, value) {
+        if (!AL.currentCtx) {
+          return;
+        }
+  
+        switch (param) {
+        case 0xC000 /* AL_DOPPLER_FACTOR */:
+          if (!Number.isFinite(value) || value < 0.0) { // Strictly negative values are disallowed
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.currentCtx.dopplerFactor = value;
+          AL.updateListenerSpace(AL.currentCtx);
+          break;
+        case 0xC003 /* AL_SPEED_OF_SOUND */:
+          if (!Number.isFinite(value) || value <= 0.0) { // Negative or zero values are disallowed
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.currentCtx.speedOfSound = value;
+          AL.updateListenerSpace(AL.currentCtx);
+          break;
+        case 0xD000 /* AL_DISTANCE_MODEL */:
+          switch (value) {
+          case 0 /* AL_NONE */:
+          case 0xd001 /* AL_INVERSE_DISTANCE */:
+          case 0xd002 /* AL_INVERSE_DISTANCE_CLAMPED */:
+          case 0xd003 /* AL_LINEAR_DISTANCE */:
+          case 0xd004 /* AL_LINEAR_DISTANCE_CLAMPED */:
+          case 0xd005 /* AL_EXPONENT_DISTANCE */:
+          case 0xd006 /* AL_EXPONENT_DISTANCE_CLAMPED */:
+            AL.currentCtx.distanceModel = value;
+            AL.updateContextGlobal(AL.currentCtx);
+            break;
+          default:
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          break;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+      },getListenerParam:function (funcname, param) {
+        if (!AL.currentCtx) {
+          return null;
+        }
+  
+        switch (param) {
+        case 0x1004 /* AL_POSITION */:
+          return AL.currentCtx.listener.position;
+        case 0x1006 /* AL_VELOCITY */:
+          return AL.currentCtx.listener.velocity;
+        case 0x100F /* AL_ORIENTATION */:
+          return AL.currentCtx.listener.direction.concat(AL.currentCtx.listener.up);
+        case 0x100A /* AL_GAIN */:
+          return AL.currentCtx.gain.gain.value;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return null;
+        }
+      },setListenerParam:function (funcname, param, value) {
+        if (!AL.currentCtx) {
+          return;
+        }
+        if (value === null) {
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+  
+        var listener = AL.currentCtx.listener;
+        switch (param) {
+        case 0x1004 /* AL_POSITION */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          listener.position[0] = value[0];
+          listener.position[1] = value[1];
+          listener.position[2] = value[2];
+          AL.updateListenerSpace(AL.currentCtx);
+          break;
+        case 0x1006 /* AL_VELOCITY */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          listener.velocity[0] = value[0];
+          listener.velocity[1] = value[1];
+          listener.velocity[2] = value[2];
+          AL.updateListenerSpace(AL.currentCtx);
+          break;
+        case 0x100A /* AL_GAIN */:
+          if (!Number.isFinite(value) || value < 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.currentCtx.gain.gain.value = value;
+          break;
+        case 0x100F /* AL_ORIENTATION */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])
+            || !Number.isFinite(value[3]) || !Number.isFinite(value[4]) || !Number.isFinite(value[5])
+          ) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          listener.direction[0] = value[0];
+          listener.direction[1] = value[1];
+          listener.direction[2] = value[2];
+          listener.up[0] = value[3];
+          listener.up[1] = value[4];
+          listener.up[2] = value[5];
+          AL.updateListenerSpace(AL.currentCtx);
+          break;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+      },getBufferParam:function (funcname, bufferId, param) {
+        if (!AL.currentCtx) {
+          return;
+        }
+        var buf = AL.buffers[bufferId];
+        if (!buf || bufferId === 0) {
+          AL.currentCtx.err = 0xA001 /* AL_INVALID_NAME */;
+          return;
+        }
+  
+        switch (param) {
+        case 0x2001 /* AL_FREQUENCY */:
+          return buf.frequency;
+        case 0x2002 /* AL_BITS */:
+          return buf.bytesPerSample * 8;
+        case 0x2003 /* AL_CHANNELS */:
+          return buf.channels;
+        case 0x2004 /* AL_SIZE */:
+          return buf.length * buf.bytesPerSample * buf.channels;
+        case 0x2015 /* AL_LOOP_POINTS_SOFT */:
+          if (buf.length === 0) {
+            return [0, 0];
+          } else {
+            return [
+              (buf.audioBuf._loopStart || 0.0) * buf.frequency,
+              (buf.audioBuf._loopEnd || buf.length) * buf.frequency
+            ];
+          }
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return null;
+        }
+      },setBufferParam:function (funcname, bufferId, param, value) {
+        if (!AL.currentCtx) {
+          return;
+        }
+        var buf = AL.buffers[bufferId];
+        if (!buf || bufferId === 0) {
+          AL.currentCtx.err = 0xA001 /* AL_INVALID_NAME */;
+          return;
+        }
+        if (value === null) {
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+  
+        switch (param) {
+        case 0x2004 /* AL_SIZE */:
+          if (value !== 0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          // Per the spec, setting AL_SIZE to 0 is a legal NOP.
+          break;
+        case 0x2015 /* AL_LOOP_POINTS_SOFT */:
+          if (value[0] < 0 || value[0] > buf.length || value[1] < 0 || value[1] > buf.Length || value[0] >= value[1]) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          if (buf.refCount > 0) {
+            AL.currentCtx.err = 0xA004 /* AL_INVALID_OPERATION */;
+            return;
+          }
+  
+          if (buf.audioBuf) {
+            buf.audioBuf._loopStart = value[0] / buf.frequency;
+            buf.audioBuf._loopEnd = value[1] / buf.frequency;
+          }
+          break;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+      },getSourceParam:function (funcname, sourceId, param) {
+        if (!AL.currentCtx) {
+          return null;
+        }
+        var src = AL.currentCtx.sources[sourceId];
+        if (!src) {
+          AL.currentCtx.err = 0xA001 /* AL_INVALID_NAME */;
+          return null;
+        }
+  
+        switch (param) {
+        case 0x202 /* AL_SOURCE_RELATIVE */:
+          return src.relative;
+        case 0x1001 /* AL_CONE_INNER_ANGLE */:
+          return src.coneInnerAngle;
+        case 0x1002 /* AL_CONE_OUTER_ANGLE */:
+          return src.coneOuterAngle;
+        case 0x1003 /* AL_PITCH */:
+          return src.pitch;
+        case 0x1004 /* AL_POSITION */:
+          return src.position;
+        case 0x1005 /* AL_DIRECTION */:
+          return src.direction;
+        case 0x1006 /* AL_VELOCITY */:
+          return src.velocity;
+        case 0x1007 /* AL_LOOPING */:
+          return src.looping;
+        case 0x1009 /* AL_BUFFER */:
+          if (src.type === 0x1028 /* AL_STATIC */) {
+            return src.bufQueue[0].id;
+          } else {
+            return 0;
+          }
+        case 0x100A /* AL_GAIN */:
+          return src.gain.gain.value;
+         case 0x100D /* AL_MIN_GAIN */:
+          return src.minGain;
+        case 0x100E /* AL_MAX_GAIN */:
+          return src.maxGain;
+        case 0x1010 /* AL_SOURCE_STATE */:
+          return src.state;
+        case 0x1015 /* AL_BUFFERS_QUEUED */:
+          if (src.bufQueue.length === 1 && src.bufQueue[0].id === 0) {
+            return 0;
+          } else {
+            return src.bufQueue.length;
+          }
+        case 0x1016 /* AL_BUFFERS_PROCESSED */:
+          if ((src.bufQueue.length === 1 && src.bufQueue[0].id === 0) || src.looping) {
+            return 0;
+          } else {
+            return src.bufsProcessed;
+          }
+        case 0x1020 /* AL_REFERENCE_DISTANCE */:
+          return src.refDistance;
+        case 0x1021 /* AL_ROLLOFF_FACTOR */:
+          return src.rolloffFactor;
+        case 0x1022 /* AL_CONE_OUTER_GAIN */:
+          return src.coneOuterGain;
+        case 0x1023 /* AL_MAX_DISTANCE */:
+          return src.maxDistance;
+        case 0x1024 /* AL_SEC_OFFSET */:
+          return AL.sourceTell(src);
+        case 0x1025 /* AL_SAMPLE_OFFSET */:
+          var offset = AL.sourceTell(src);
+          if (offset > 0.0) {
+            offset *= src.bufQueue[0].frequency;
+          }
+          return offset;
+        case 0x1026 /* AL_BYTE_OFFSET */:
+          var offset = AL.sourceTell(src);
+          if (offset > 0.0) {
+            offset *= src.bufQueue[0].frequency * src.bufQueue[0].bytesPerSample;
+          }
+          return offset;
+        case 0x1027 /* AL_SOURCE_TYPE */:
+          return src.type;
+        case 0x1214 /* AL_SOURCE_SPATIALIZE_SOFT */:
+          return src.spatialize;
+        case 0x2009 /* AL_BYTE_LENGTH_SOFT */: 
+          var length = 0;
+          var bytesPerFrame = 0;
+          for (var i = 0; i < src.bufQueue.length; i++) {
+            length += src.bufQueue[i].length;
+            if (src.bufQueue[i].id !== 0) {
+              bytesPerFrame = src.bufQueue[i].bytesPerSample * src.bufQueue[i].channels;
+            }
+          }
+          return length * bytesPerFrame;
+        case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
+          var length = 0;
+          for (var i = 0; i < src.bufQueue.length; i++) {
+            length += src.bufQueue[i].length;
+          }
+          return length;
+        case 0x200B /* AL_SEC_LENGTH_SOFT */:
+          return AL.sourceDuration(src);
+        case 0xD000 /* AL_DISTANCE_MODEL */:
+          return src.distanceModel;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return null;
+        }
+      },setSourceParam:function (funcname, sourceId, param, value) {
+        if (!AL.currentCtx) {
+          return;
+        }
+        var src = AL.currentCtx.sources[sourceId];
+        if (!src) {
+          AL.currentCtx.err = 0xA001 /* AL_INVALID_NAME */;
+          return;
+        }
+        if (value === null) {
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+  
+        switch (param) {
+        case 0x202 /* AL_SOURCE_RELATIVE */:
+          if (value === 1 /* AL_TRUE */) {
+            src.relative = true;
+            AL.updateSourceSpace(src);
+          } else if (value === 0 /* AL_FALSE */) {
+            src.relative = false;
+            AL.updateSourceSpace(src);
+          } else {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          break;
+        case 0x1001 /* AL_CONE_INNER_ANGLE */:
+          if (!Number.isFinite(value)) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.coneInnerAngle = value;
+          if (src.panner) {
+            src.panner.coneInnerAngle = value % 360.0;
+          }
+          break;
+        case 0x1002 /* AL_CONE_OUTER_ANGLE */:
+          if (!Number.isFinite(value)) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.coneOuterAngle = value;
+          if (src.panner) {
+            src.panner.coneOuterAngle = value % 360.0;
+          }
+          break;
+        case 0x1003 /* AL_PITCH */:
+          if (!Number.isFinite(value) || value <= 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          if (src.pitch === value) {
+            break;
+          }
+  
+          src.pitch = value;
+          AL.updateSourceRate(src);
+          break;
+        case 0x1004 /* AL_POSITION */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.position[0] = value[0];
+          src.position[1] = value[1];
+          src.position[2] = value[2];
+          AL.updateSourceSpace(src);
+          break;
+        case 0x1005 /* AL_DIRECTION */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.direction[0] = value[0];
+          src.direction[1] = value[1];
+          src.direction[2] = value[2];
+          AL.updateSourceSpace(src);
+          break;
+        case 0x1006 /* AL_VELOCITY */:
+          if (!Number.isFinite(value[0]) || !Number.isFinite(value[1]) || !Number.isFinite(value[2])) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.velocity[0] = value[0];
+          src.velocity[1] = value[1];
+          src.velocity[2] = value[2];
+          AL.updateSourceSpace(src);
+          break;
+        case 0x1007 /* AL_LOOPING */:
+          if (value === 1 /* AL_TRUE */) {
+            src.looping = true;
+            AL.updateSourceTime(src);
+            if (src.type === 0x1028 /* AL_STATIC */ && src.audioQueue.length > 0) {
+              var audioSrc  = src.audioQueue[0];
+              audioSrc.loop = true;
+              audioSrc._duration = Number.POSITIVE_INFINITY;
+            }
+          } else if (value === 0 /* AL_FALSE */) {
+            src.looping = false;
+            var currentTime = AL.updateSourceTime(src);
+            if (src.type === 0x1028 /* AL_STATIC */ && src.audioQueue.length > 0) {
+              var audioSrc  = src.audioQueue[0];
+              audioSrc.loop = false;
+              audioSrc._duration = src.bufQueue[0].audioBuf.duration / src.playbackRate;
+              audioSrc._startTime = currentTime - src.bufOffset / src.playbackRate;
+            }
+          } else {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          break;
+        case 0x1009 /* AL_BUFFER */:
+          if (src.state === 0x1012 /* AL_PLAYING */ || src.state === 0x1013 /* AL_PAUSED */) {
+            AL.currentCtx.err = 0xA004 /* AL_INVALID_OPERATION */;
+            return;
+          }
+  
+          if (value === 0) {
+            for (var i in src.bufQueue) {
+              src.bufQueue[i].refCount--;
+            }
+            src.bufQueue.length = 1;
+            src.bufQueue[0] = AL.buffers[0];
+  
+            src.bufsProcessed = 0;
+            src.type = 0x1030 /* AL_UNDETERMINED */;
+          } else {
+            var buf = AL.buffers[value];
+            if (!buf) {
+              AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+              return;
+            }
+  
+            for (var i in src.bufQueue) {
+              src.bufQueue[i].refCount--;
+            }
+            src.bufQueue.length = 0;
+  
+            buf.refCount++;
+            src.bufQueue = [buf];
+            src.bufsProcessed = 0;
+            src.type = 0x1028 /* AL_STATIC */;
+          }
+  
+          AL.initSourcePanner(src);
+          AL.scheduleSourceAudio(src);
+          break;
+        case 0x100A /* AL_GAIN */:
+          if (!Number.isFinite(value) || value < 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.gain.gain.value = value;
+          break;
+        case 0x100D /* AL_MIN_GAIN */:
+          if (!Number.isFinite(value) || value < 0.0 || value > Math.min(src.maxGain, 1.0)) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.minGain = value;
+          break;
+        case 0x100E /* AL_MAX_GAIN */:
+          if (!Number.isFinite(value) || value < Math.max(0.0, src.minGain) || value > 1.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.maxGain = value;
+          break;
+        case 0x1020 /* AL_REFERENCE_DISTANCE */:
+          if (!Number.isFinite(value) || value < 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.refDistance = value;
+          if (src.panner) {
+            src.panner.refDistance = value;
+          }
+          break;
+        case 0x1021 /* AL_ROLLOFF_FACTOR */:
+          if (!Number.isFinite(value) || value < 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.rolloffFactor = value;
+          if (src.panner) {
+            src.panner.rolloffFactor = value;
+          }
+          break;
+        case 0x1022 /* AL_CONE_OUTER_GAIN */:
+          if (!Number.isFinite(value) || value < 0.0 || value > 1.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.coneOuterGain = value;
+          if (src.panner) {
+            src.panner.coneOuterGain = value;
+          }
+          break;
+        case 0x1023 /* AL_MAX_DISTANCE */:
+          if (!Number.isFinite(value) || value < 0.0) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          src.maxDistance = value;
+          if (src.panner) {
+            src.panner.maxDistance = value;
+          }
+          break;
+        case 0x1024 /* AL_SEC_OFFSET */:
+          if (value < 0.0 || value > AL.sourceDuration(src)) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.sourceSeek(src, value);
+          break;
+        case 0x1025 /* AL_SAMPLE_OFFSET */:
+          var srcLen = AL.sourceDuration(src);
+          if (srcLen > 0.0) {
+            var frequency;
+            for (var bufId in src.bufQueue) {
+              if (bufId !== 0) {
+                frequency = src.bufQueue[bufId].frequency;
+                break;
+              }
+            }
+            value /= frequency;
+          }
+          if (value < 0.0 || value > srcLen) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.sourceSeek(src, value);
+          break;
+        case 0x1026 /* AL_BYTE_OFFSET */:
+          var srcLen = AL.sourceDuration(src);
+          if (srcLen > 0.0) {
+            var bytesPerSec;
+            for (var bufId in src.bufQueue) {
+              if (bufId !== 0) {
+                var buf = src.bufQueue[bufId];
+                bytesPerSec = buf.frequency * buf.bytesPerSample * buf.channels;
+                break;
+              }
+            }
+            value /= bytesPerSec;
+          }
+          if (value < 0.0 || value > srcLen) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          AL.sourceSeek(src, value);
+          break;
+        case 0x1214 /* AL_SOURCE_SPATIALIZE_SOFT */:
+          if (value !== 0 /* AL_FALSE */ && value !== 1 /* AL_TRUE */ && value !== 2 /* AL_AUTO_SOFT */) {
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+  
+          src.spatialize = value;
+          AL.initSourcePanner(src);
+          break;
+        case 0x2009 /* AL_BYTE_LENGTH_SOFT */: 
+        case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
+        case 0x200B /* AL_SEC_LENGTH_SOFT */:
+          AL.currentCtx.err = 0xA004 /* AL_INVALID_OPERATION */;
+          break;
+        case 0xD000 /* AL_DISTANCE_MODEL */:
+          switch (value) {
+          case 0 /* AL_NONE */:
+          case 0xd001 /* AL_INVERSE_DISTANCE */:
+          case 0xd002 /* AL_INVERSE_DISTANCE_CLAMPED */:
+          case 0xd003 /* AL_LINEAR_DISTANCE */:
+          case 0xd004 /* AL_LINEAR_DISTANCE_CLAMPED */:
+          case 0xd005 /* AL_EXPONENT_DISTANCE */:
+          case 0xd006 /* AL_EXPONENT_DISTANCE_CLAMPED */:
+            src.distanceModel = value;
+            if (AL.currentCtx.sourceDistanceModel) {
+              AL.updateContextGlobal(AL.currentCtx);
+            }
+            break;
+          default:
+            AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+            return;
+          }
+          break;
+        default:
+          AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+          return;
+        }
+      },captures:{},sharedCaptureAudioCtx:null,requireValidCaptureDevice:function (deviceId, funcname) {
+        if (deviceId === 0) {
+          AL.alcErr = 0xA001 /* ALC_INVALID_DEVICE */;
+          return null;
+        }
+        var c = AL.captures[deviceId];
+        if (!c) {
+          AL.alcErr = 0xA001 /* ALC_INVALID_DEVICE */;
+          return null;
+        }
+        var err = c.mediaStreamError;
+        if (err) {
+          AL.alcErr = 0xA001 /* ALC_INVALID_DEVICE */;
+          return null;
+        }
+        return c;
+      }};function _alBufferData(bufferId, format, pData, size, freq) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viiiii(1, bufferId, format, pData, size, freq);
+      if (!AL.currentCtx) {
+        return;
+      }
+      var buf = AL.buffers[bufferId];
+      if (!buf) {
+        AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+        return;
+      }
+      if (freq <= 0) {
+        AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+        return;
+      }
+  
+      var audioBuf = null;
+      try {
+        switch (format) {
+        case 0x1100 /* AL_FORMAT_MONO8 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(1, size, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            for (var i = 0; i < size; ++i) {
+              channel0[i] = HEAPU8[pData++] * 0.0078125 /* 1/128 */ - 1.0;
+            }
+          }
+          buf.bytesPerSample = 1;
+          buf.channels = 1;
+          buf.length = size;
+          break;
+        case 0x1101 /* AL_FORMAT_MONO16 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(1, size >> 1, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            pData >>= 1;
+            for (var i = 0; i < size >> 1; ++i) {
+              channel0[i] = HEAP16[pData++] * 0.000030517578125 /* 1/32768 */;
+            }
+          }
+          buf.bytesPerSample = 2;
+          buf.channels = 1;
+          buf.length = size >> 1;
+          break;
+        case 0x1102 /* AL_FORMAT_STEREO8 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(2, size >> 1, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            var channel1 = audioBuf.getChannelData(1);
+            for (var i = 0; i < size >> 1; ++i) {
+              channel0[i] = HEAPU8[pData++] * 0.0078125 /* 1/128 */ - 1.0;
+              channel1[i] = HEAPU8[pData++] * 0.0078125 /* 1/128 */ - 1.0;
+            }
+          }
+          buf.bytesPerSample = 1;
+          buf.channels = 2;
+          buf.length = size >> 1;
+          break;
+        case 0x1103 /* AL_FORMAT_STEREO16 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(2, size >> 2, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            var channel1 = audioBuf.getChannelData(1);
+            pData >>= 1;
+            for (var i = 0; i < size >> 2; ++i) {
+              channel0[i] = HEAP16[pData++] * 0.000030517578125 /* 1/32768 */;
+              channel1[i] = HEAP16[pData++] * 0.000030517578125 /* 1/32768 */;
+            }
+          }
+          buf.bytesPerSample = 2;
+          buf.channels = 2;
+          buf.length = size >> 2;
+          break;
+        case 0x10010 /* AL_FORMAT_MONO_FLOAT32 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(1, size >> 2, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            pData >>= 2;
+            for (var i = 0; i < size >> 2; ++i) {
+              channel0[i] = HEAPF32[pData++];
+            }
+          }
+          buf.bytesPerSample = 4;
+          buf.channels = 1;
+          buf.length = size >> 2;
+          break;
+        case 0x10011 /* AL_FORMAT_STEREO_FLOAT32 */:
+          if (size > 0) {
+            audioBuf = AL.currentCtx.audioCtx.createBuffer(2, size >> 3, freq);
+            var channel0 = audioBuf.getChannelData(0);
+            var channel1 = audioBuf.getChannelData(1);
+            pData >>= 2;
+            for (var i = 0; i < size >> 3; ++i) {
+              channel0[i] = HEAPF32[pData++];
+              channel1[i] = HEAPF32[pData++];
+            }
+          }
+          buf.bytesPerSample = 4;
+          buf.channels = 2;
+          buf.length = size >> 3;
+          break;
+        default:
+          AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+          return;
+        }
+        buf.frequency = freq;
+        buf.audioBuf = audioBuf;
+      } catch (e) {
+        AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+        return;
+      }
+    }
+
+  function _alGenBuffers(count, pBufferIds) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_vii(2, count, pBufferIds);
+      if (!AL.currentCtx) {
+        return;
+      }
+  
+      for (var i = 0; i < count; ++i) {
+        var buf = {
+          deviceId: AL.currentCtx.deviceId,
+          id: AL.newId(),
+          refCount: 0,
+          audioBuf: null,
+          frequency: 0,
+          bytesPerSample: 2,
+          channels: 1,
+          length: 0,
+        };
+        AL.deviceRefCounts[buf.deviceId]++;
+        AL.buffers[buf.id] = buf;
+        HEAP32[(((pBufferIds)+(i*4))>>2)]=buf.id;
+      }
+    }
+
+  function _alGenSources(count, pSourceIds) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_vii(3, count, pSourceIds);
+      if (!AL.currentCtx) {
+        return;
+      }
+      for (var i = 0; i < count; ++i) {
+        var gain = AL.currentCtx.audioCtx.createGain();
+        gain.connect(AL.currentCtx.gain);
+        var src = {
+          context: AL.currentCtx,
+          id: AL.newId(),
+          type: 0x1030 /* AL_UNDETERMINED */,
+          state: 0x1011 /* AL_INITIAL */,
+          bufQueue: [AL.buffers[0]],
+          audioQueue: [],
+          looping: false,
+          pitch: 1.0,
+          dopplerShift: 1.0,
+          gain: gain,
+          minGain: 0.0,
+          maxGain: 1.0,
+          panner: null,
+          bufsProcessed: 0,
+          bufStartTime: Number.NEGATIVE_INFINITY,
+          bufOffset: 0.0,
+          relative: false,
+          refDistance: 1.0,
+          maxDistance: 3.40282e38 /* FLT_MAX */,
+          rolloffFactor: 1.0,
+          position: [0.0, 0.0, 0.0],
+          velocity: [0.0, 0.0, 0.0],
+          direction: [0.0, 0.0, 0.0],
+          coneOuterGain: 0.0,
+          coneInnerAngle: 360.0,
+          coneOuterAngle: 360.0,
+          distanceModel: 0xd002 /* AL_INVERSE_DISTANCE_CLAMPED */,
+          spatialize: 2 /* AL_AUTO_SOFT */,
+  
+          get playbackRate() {
+            return this.pitch * this.dopplerShift;
+          }
+        };
+        AL.currentCtx.sources[src.id] = src;
+        HEAP32[(((pSourceIds)+(i*4))>>2)]=src.id;
+      }
+    }
+
+  function _alGetError() {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_i(4);
+      if (!AL.currentCtx) {
+        return 0xA004 /* AL_INVALID_OPERATION */;
+      } else {
+        // Reset error on get.
+        var err = AL.currentCtx.err;
+        AL.currentCtx.err = 0 /* AL_NO_ERROR */;
+        return err;
+      }
+    }
+
+  function _alGetSourcei(sourceId, param, pValue) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viii(5, sourceId, param, pValue);
+      var val = AL.getSourceParam('alGetSourcei', sourceId, param);
+      if (val === null) {
+        return;
+      }
+      if (!pValue) {
+        AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+        return;
+      }
+  
+      switch (param) {
+      case 0x202 /* AL_SOURCE_RELATIVE */:
+      case 0x1001 /* AL_CONE_INNER_ANGLE */:
+      case 0x1002 /* AL_CONE_OUTER_ANGLE */:
+      case 0x1007 /* AL_LOOPING */:
+      case 0x1009 /* AL_BUFFER */:
+      case 0x1010 /* AL_SOURCE_STATE */:
+      case 0x1015 /* AL_BUFFERS_QUEUED */:
+      case 0x1016 /* AL_BUFFERS_PROCESSED */:
+      case 0x1020 /* AL_REFERENCE_DISTANCE */:
+      case 0x1021 /* AL_ROLLOFF_FACTOR */:
+      case 0x1023 /* AL_MAX_DISTANCE */:
+      case 0x1024 /* AL_SEC_OFFSET */:
+      case 0x1025 /* AL_SAMPLE_OFFSET */:
+      case 0x1026 /* AL_BYTE_OFFSET */:
+      case 0x1027 /* AL_SOURCE_TYPE */:
+      case 0x1214 /* AL_SOURCE_SPATIALIZE_SOFT */:
+      case 0x2009 /* AL_BYTE_LENGTH_SOFT */: 
+      case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
+      case 0xD000 /* AL_DISTANCE_MODEL */:
+        HEAP32[((pValue)>>2)]=val;
+        break;
+      default:
+        AL.currentCtx.err = 0xA002 /* AL_INVALID_ENUM */;
+        return;
+      }
+    }
+
+  function _alListener3f(param, value0, value1, value2) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viiii(6, param, value0, value1, value2);
+      switch (param) {
+      case 0x1004 /* AL_POSITION */:
+      case 0x1006 /* AL_VELOCITY */:
+        AL.paramArray[0] = value0;
+        AL.paramArray[1] = value1;
+        AL.paramArray[2] = value2;
+        AL.setListenerParam('alListener3f', param, AL.paramArray);
+        break;
+      default:
+        AL.setListenerParam('alListener3f', param, null);
+        break;
+      }
+    }
+
+  function _alListenerfv(param, pValues) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_vii(7, param, pValues);
+      if (!AL.currentCtx) {
+        return;
+      }
+      if (!pValues) {
+        AL.currentCtx.err = 0xA003 /* AL_INVALID_VALUE */;
+        return;
+      }
+  
+      switch (param) {
+      case 0x1004 /* AL_POSITION */:
+      case 0x1006 /* AL_VELOCITY */:
+        AL.paramArray[0] = HEAPF32[((pValues)>>2)];
+        AL.paramArray[1] = HEAPF32[(((pValues)+(4))>>2)];
+        AL.paramArray[2] = HEAPF32[(((pValues)+(8))>>2)];
+        AL.setListenerParam('alListenerfv', param, AL.paramArray);
+        break;
+      case 0x100F /* AL_ORIENTATION */:
+        AL.paramArray[0] = HEAPF32[((pValues)>>2)];
+        AL.paramArray[1] = HEAPF32[(((pValues)+(4))>>2)];
+        AL.paramArray[2] = HEAPF32[(((pValues)+(8))>>2)];
+        AL.paramArray[3] = HEAPF32[(((pValues)+(12))>>2)];
+        AL.paramArray[4] = HEAPF32[(((pValues)+(16))>>2)];
+        AL.paramArray[5] = HEAPF32[(((pValues)+(20))>>2)];
+        AL.setListenerParam('alListenerfv', param, AL.paramArray);
+        break;
+      default:
+        AL.setListenerParam('alListenerfv', param, null);
+        break;
+      }
+    }
+
+  function _alSource3f(sourceId, param, value0, value1, value2) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viiiii(8, sourceId, param, value0, value1, value2);
+      switch (param) {
+      case 0x1004 /* AL_POSITION */:
+      case 0x1005 /* AL_DIRECTION */:
+      case 0x1006 /* AL_VELOCITY */:
+        AL.paramArray[0] = value0;
+        AL.paramArray[1] = value1;
+        AL.paramArray[2] = value2;
+        AL.setSourceParam('alSource3f', sourceId, param, AL.paramArray);
+        break;
+      default:
+        AL.setSourceParam('alSource3f', sourceId, param, null);
+        break;
+      }
+    }
+
+  function _alSourcePlay(sourceId) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_vi(9, sourceId);
+      if (!AL.currentCtx) {
+        return;
+      }
+      var src = AL.currentCtx.sources[sourceId];
+      if (!src) {
+        AL.currentCtx.err = 0xA001 /* AL_INVALID_NAME */;
+        return;
+      }
+      AL.setSourceState(src, 0x1012 /* AL_PLAYING */);
+    }
+
+  function _alSourcef(sourceId, param, value) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viii(10, sourceId, param, value);
+      switch (param) {
+      case 0x1001 /* AL_CONE_INNER_ANGLE */:
+      case 0x1002 /* AL_CONE_OUTER_ANGLE */:
+      case 0x1003 /* AL_PITCH */:
+      case 0x100A /* AL_GAIN */:
+      case 0x100D /* AL_MIN_GAIN */:
+      case 0x100E /* AL_MAX_GAIN */:
+      case 0x1020 /* AL_REFERENCE_DISTANCE */:
+      case 0x1021 /* AL_ROLLOFF_FACTOR */:
+      case 0x1022 /* AL_CONE_OUTER_GAIN */:
+      case 0x1023 /* AL_MAX_DISTANCE */:
+      case 0x1024 /* AL_SEC_OFFSET */:
+      case 0x1025 /* AL_SAMPLE_OFFSET */:
+      case 0x1026 /* AL_BYTE_OFFSET */:
+      case 0x200B /* AL_SEC_LENGTH_SOFT */:
+        AL.setSourceParam('alSourcef', sourceId, param, value);
+        break;
+      default:
+        AL.setSourceParam('alSourcef', sourceId, param, null);
+        break;
+      }
+    }
+
+  function _alSourcei(sourceId, param, value) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_viii(11, sourceId, param, value);
+      switch (param) {
+      case 0x202 /* AL_SOURCE_RELATIVE */:
+      case 0x1001 /* AL_CONE_INNER_ANGLE */:
+      case 0x1002 /* AL_CONE_OUTER_ANGLE */:
+      case 0x1007 /* AL_LOOPING */:
+      case 0x1009 /* AL_BUFFER */:
+      case 0x1020 /* AL_REFERENCE_DISTANCE */:
+      case 0x1021 /* AL_ROLLOFF_FACTOR */:
+      case 0x1023 /* AL_MAX_DISTANCE */:
+      case 0x1024 /* AL_SEC_OFFSET */:
+      case 0x1025 /* AL_SAMPLE_OFFSET */:
+      case 0x1026 /* AL_BYTE_OFFSET */:
+      case 0x1214 /* AL_SOURCE_SPATIALIZE_SOFT */:
+      case 0x2009 /* AL_BYTE_LENGTH_SOFT */: 
+      case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
+      case 0xD000 /* AL_DISTANCE_MODEL */:
+        AL.setSourceParam('alSourcei', sourceId, param, value);
+        break;
+      default:
+        AL.setSourceParam('alSourcei', sourceId, param, null);
+        break;
+      }
+    }
+
+  function _alcCreateContext(deviceId, pAttrList) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_iii(12, deviceId, pAttrList);
+      if (!deviceId in AL.deviceRefCounts) {
+        AL.alcErr = 0xA001; /* ALC_INVALID_DEVICE */
+        return 0;
+      }
+  
+      var options = null;
+      var attrs = [];
+      var hrtf = null;
+      pAttrList >>= 2;
+      if (pAttrList) {
+        var attr = 0;
+        var val = 0;
+        while (true) {
+          attr = HEAP32[pAttrList++];
+          attrs.push(attr);
+          if (attr === 0) {
+            break;
+          }
+          val = HEAP32[pAttrList++];
+          attrs.push(val);
+  
+          switch (attr) {
+          case 0x1007 /* ALC_FREQUENCY */:
+            if (!options) {
+              options = {};
+            }
+  
+            options.sampleRate = val;
+            break;
+          case 0x1010 /* ALC_MONO_SOURCES */: // fallthrough
+          case 0x1011 /* ALC_STEREO_SOURCES */:
+            // Do nothing; these hints are satisfied by default
+            break
+          case 0x1992 /* ALC_HRTF_SOFT */:
+            switch (val) {
+              case 0 /* ALC_FALSE */:
+                hrtf = false;
+                break;
+              case 1 /* ALC_TRUE */:
+                hrtf = true;
+                break;
+              case 2 /* ALC_DONT_CARE_SOFT */:
+                break;
+              default:
+                AL.alcErr = 0xA004 /* ALC_INVALID_VALUE */;
+                return 0;
+            }
+            break;
+          case 0x1996 /* ALC_HRTF_ID_SOFT */:
+            if (val !== 0) {
+              AL.alcErr = 0xA004 /* ALC_INVALID_VALUE */;
+              return 0;
+            }
+            break;
+          default:
+            AL.alcErr = 0xA004; /* ALC_INVALID_VALUE */
+            return 0;
+          }
+        }
+      }
+  
+      var AudioContext = window.AudioContext || window.webkitAudioContext;
+      var ac = null;
+      try {
+        // Only try to pass options if there are any, for compat with browsers that don't support this
+        if (options) {
+          ac = new AudioContext(options);
+        } else {
+          ac = new AudioContext();
+        }
+      } catch (e) {
+        if (e.name === 'NotSupportedError') {
+          AL.alcErr = 0xA004; /* ALC_INVALID_VALUE */
+        } else {
+          AL.alcErr = 0xA001; /* ALC_INVALID_DEVICE */
+        }
+  
+        return 0;
+      }
+  
+      // Old Web Audio API (e.g. Safari 6.0.5) had an inconsistently named createGainNode function.
+      if (typeof(ac.createGain) === 'undefined') {
+        ac.createGain = ac.createGainNode;
+      }
+  
+      var gain = ac.createGain();
+      gain.connect(ac.destination);
+      var ctx = {
+        deviceId: deviceId,
+        id: AL.newId(),
+        attrs: attrs,
+        audioCtx: ac,
+        listener: {
+      	  position: [0.0, 0.0, 0.0],
+      	  velocity: [0.0, 0.0, 0.0],
+      	  direction: [0.0, 0.0, 0.0],
+      	  up: [0.0, 0.0, 0.0]
+        },
+        sources: [],
+        interval: setInterval(function() { AL.scheduleContextAudio(ctx); }, AL.QUEUE_INTERVAL),
+        gain: gain,
+        distanceModel: 0xd002 /* AL_INVERSE_DISTANCE_CLAMPED */,
+        speedOfSound: 343.3,
+        dopplerFactor: 1.0,
+        sourceDistanceModel: false,
+        hrtf: hrtf || false,
+  
+        _err: 0,
+        get err() {
+          return this._err;
+        },
+        set err(val) {
+          // Errors should not be overwritten by later errors until they are cleared by a query.
+          if (this._err === 0 /* AL_NO_ERROR */ || val === 0 /* AL_NO_ERROR */) {
+            this._err = val;
+          }
+        }
+      };
+      AL.deviceRefCounts[deviceId]++;
+      AL.contexts[ctx.id] = ctx;
+  
+      if (hrtf !== null) {
+        // Apply hrtf attrib to all contexts for this device
+        for (var ctxId in AL.contexts) {
+          var c = AL.contexts[ctxId];
+          if (c.deviceId === deviceId) {
+            c.hrtf = hrtf;
+            AL.updateContextGlobal(c);
+          }
+        }
+      }
+  
+      return ctx.id;
+    }
+
+  function _alcGetString(deviceId, param) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_iii(13, deviceId, param);
+      if (AL.alcStringCache[param]) {
+        return AL.alcStringCache[param];
+      }
+  
+      var ret;
+      switch (param) {
+      case 0 /* ALC_NO_ERROR */:
+        ret = 'No Error';
+        break;
+      case 0xA001 /* ALC_INVALID_DEVICE */:
+        ret = 'Invalid Device';
+        break;
+      case 0xA002 /* ALC_INVALID_CONTEXT */:
+        ret = 'Invalid Context';
+        break;
+      case 0xA003 /* ALC_INVALID_ENUM */:
+        ret = 'Invalid Enum';
+        break;
+      case 0xA004 /* ALC_INVALID_VALUE */:
+        ret = 'Invalid Value';
+        break;
+      case 0xA005 /* ALC_OUT_OF_MEMORY */:
+        ret = 'Out of Memory';
+        break;
+      case 0x1004 /* ALC_DEFAULT_DEVICE_SPECIFIER */:
+        if (typeof(AudioContext) !== 'undefined' ||
+            typeof(webkitAudioContext) !== 'undefined') {
+          ret = AL.DEVICE_NAME;
+        } else {
+          return 0;
+        }
+        break;
+      case 0x1005 /* ALC_DEVICE_SPECIFIER */:
+        if (typeof(AudioContext) !== 'undefined' ||
+            typeof(webkitAudioContext) !== 'undefined') {
+          ret = AL.DEVICE_NAME.concat('\0');
+        } else {
+          ret = '\0';
+        }
+        break;
+      case 0x311 /* ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER */:
+        ret = AL.CAPTURE_DEVICE_NAME;
+        break;
+      case 0x310 /* ALC_CAPTURE_DEVICE_SPECIFIER */:
+        if (deviceId === 0) 
+          ret = AL.CAPTURE_DEVICE_NAME.concat('\0');
+          else {
+          var c = AL.requireValidCaptureDevice(deviceId, 'alcGetString');
+          if (!c) {
+            return 0;
+          }
+          ret = c.deviceName;
+        }  
+        break;
+      case 0x1006 /* ALC_EXTENSIONS */:
+        if (!deviceId) {
+          AL.alcErr = 0xA001 /* ALC_INVALID_DEVICE */;
+          return 0;
+        }
+  
+        ret = '';
+        for (var ext in AL.ALC_EXTENSIONS) {
+          ret = ret.concat(ext);
+          ret = ret.concat(' ');
+        }
+        ret = ret.trim();
+        break;
+      default:
+        AL.alcErr = 0xA003 /* ALC_INVALID_ENUM */;
+        return 0;
+      }
+  
+      ret = allocate(intArrayFromString(ret), 'i8', ALLOC_NORMAL);
+      AL.alcStringCache[param] = ret;
+      return ret;
+    }
+
+  function _alcIsExtensionPresent(deviceId, pExtName) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_iii(14, deviceId, pExtName);
+      name = Pointer_stringify(pExtName);
+  
+      return AL.ALC_EXTENSIONS[name] ? 1 : 0;
+    }
+
+  function _alcMakeContextCurrent(contextId) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_ii(15, contextId);
+      if (contextId === 0) {
+        AL.currentCtx = null;
+        return 0;
+      } else {
+        AL.currentCtx = AL.contexts[contextId];
+        return 1;
+      }
+    }
+
+  function _alcOpenDevice(pDeviceName) {
+  if (ENVIRONMENT_IS_PTHREAD) return _emscripten_sync_run_in_browser_thread_ii(16, pDeviceName);
+      if (pDeviceName) {
+        var name = Pointer_stringify(pDeviceName);
+        if (name !== AL.DEVICE_NAME) {
+          return 0;
+        }
+      }
+  
+      if (typeof(AudioContext) !== 'undefined' || typeof(webkitAudioContext) !== 'undefined') {
+        var deviceId = AL.newId();
+        AL.deviceRefCounts[deviceId] = 0;
+        return deviceId;
+      } else {
+        return 0;
+      }
     }
 
   
@@ -7931,7 +9829,10 @@ function copyTempDouble(ptr) {
   function _emscripten_syscall(which, varargs) {
     switch (which) {
       case 140: return ___syscall140(which, varargs);
+      case 145: return ___syscall145(which, varargs);
       case 146: return ___syscall146(which, varargs);
+      case 221: return ___syscall221(which, varargs);
+      case 5: return ___syscall5(which, varargs);
       case 54: return ___syscall54(which, varargs);
       case 6: return ___syscall6(which, varargs);
       default: throw "surprising proxied syscall: " + which;
@@ -8398,7 +10299,69 @@ JSEvents.staticInit();;
 
  // proxiedFunctionTable specifies the list of functions that can be called either synchronously or asynchronously from other threads in postMessage()d or internally queued events. This way a pthread in a Worker can synchronously access e.g. the DOM on the main thread.
 
-var proxiedFunctionTable = [null];
+var proxiedFunctionTable = [null,_alBufferData,_alGenBuffers,_alGenSources,_alGetError,_alGetSourcei,_alListener3f,_alListenerfv,_alSource3f,_alSourcePlay,_alSourcef,_alSourcei,_alcCreateContext,_alcGetString,_alcIsExtensionPresent,_alcMakeContextCurrent,_alcOpenDevice];
+
+function _emscripten_sync_run_in_browser_thread_viiiii(func, p0, p1, p2, p3, p4) {
+  var waitAddress = stackSave();
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 6, func: func, waitAddress: waitAddress, p0: p0, p1: p1, p2: p2, p3: p3, p4: p4 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+}
+
+function _emscripten_sync_run_in_browser_thread_vii(func, p0, p1) {
+  var waitAddress = stackSave();
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 3, func: func, waitAddress: waitAddress, p0: p0, p1: p1 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+}
+
+function _emscripten_sync_run_in_browser_thread_i(func) {
+  var waitAddress = stackSave();
+  var returnValue = waitAddress + 4;
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 1, func: func, waitAddress: waitAddress, returnValue: returnValue });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+  return HEAP32[returnValue >> 2];
+}
+
+function _emscripten_sync_run_in_browser_thread_viii(func, p0, p1, p2) {
+  var waitAddress = stackSave();
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 4, func: func, waitAddress: waitAddress, p0: p0, p1: p1, p2: p2 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+}
+
+function _emscripten_sync_run_in_browser_thread_viiii(func, p0, p1, p2, p3) {
+  var waitAddress = stackSave();
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 5, func: func, waitAddress: waitAddress, p0: p0, p1: p1, p2: p2, p3: p3 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+}
+
+function _emscripten_sync_run_in_browser_thread_vi(func, p0) {
+  var waitAddress = stackSave();
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 2, func: func, waitAddress: waitAddress, p0: p0 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+}
+
+function _emscripten_sync_run_in_browser_thread_iii(func, p0, p1) {
+  var waitAddress = stackSave();
+  var returnValue = waitAddress + 4;
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 3, func: func, waitAddress: waitAddress, returnValue: returnValue, p0: p0, p1: p1 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+  return HEAP32[returnValue >> 2];
+}
+
+function _emscripten_sync_run_in_browser_thread_ii(func, p0) {
+  var waitAddress = stackSave();
+  var returnValue = waitAddress + 4;
+  Atomics.store(HEAP32, waitAddress >> 2, 0);
+  postMessage({ proxiedCall: 2, func: func, waitAddress: waitAddress, returnValue: returnValue, p0: p0 });
+  Atomics.wait(HEAP32, waitAddress >> 2, 0);
+  return HEAP32[returnValue >> 2];
+}
 
 if (!ENVIRONMENT_IS_PTHREAD) {
  // Only main thread initializes these, pthreads copy them over at thread worker init time (in pthread-main.js)
@@ -8470,9 +10433,9 @@ function nullFunc_viiiii(x) { err("Invalid function pointer called with signatur
 
 function nullFunc_viiiiii(x) { err("Invalid function pointer called with signature 'viiiiii'. Perhaps this is an invalid value (e.g. caused by calling a virtual method on a NULL pointer)? Or calling a function with an incorrect type, which will fail? (it is worth building your source files with -Werror (warnings are errors), as warnings can indicate undefined behavior which can cause this)");  err("Build with ASSERTIONS=2 for more info.");abort(x) }
 
-Module['wasmTableSize'] = 166;
+Module['wasmTableSize'] = 182;
 
-Module['wasmMaxTableSize'] = 166;
+Module['wasmMaxTableSize'] = 182;
 
 function invoke_i(index) {
   var sp = stackSave();
@@ -8608,7 +10571,7 @@ function invoke_viiiiii(index,a1,a2,a3,a4,a5,a6) {
 
 Module.asmGlobalArg = {};
 
-Module.asmLibraryArg = { "abort": abort, "assert": assert, "enlargeMemory": enlargeMemory, "getTotalMemory": getTotalMemory, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "abortStackOverflow": abortStackOverflow, "nullFunc_i": nullFunc_i, "nullFunc_ii": nullFunc_ii, "nullFunc_iii": nullFunc_iii, "nullFunc_iiii": nullFunc_iiii, "nullFunc_v": nullFunc_v, "nullFunc_vi": nullFunc_vi, "nullFunc_vif": nullFunc_vif, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_viiii": nullFunc_viiii, "nullFunc_viiiii": nullFunc_viiiii, "nullFunc_viiiiii": nullFunc_viiiiii, "invoke_i": invoke_i, "invoke_ii": invoke_ii, "invoke_iii": invoke_iii, "invoke_iiii": invoke_iiii, "invoke_v": invoke_v, "invoke_vi": invoke_vi, "invoke_vif": invoke_vif, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_viiii": invoke_viiii, "invoke_viiiii": invoke_viiiii, "invoke_viiiiii": invoke_viiiiii, "_XChangeWindowAttributes": _XChangeWindowAttributes, "_XCreateWindow": _XCreateWindow, "_XInternAtom": _XInternAtom, "_XMapWindow": _XMapWindow, "_XOpenDisplay": _XOpenDisplay, "_XSendEvent": _XSendEvent, "_XSetWMHints": _XSetWMHints, "_XStoreName": _XStoreName, "__ZSt18uncaught_exceptionv": __ZSt18uncaught_exceptionv, "___assert_fail": ___assert_fail, "___call_main": ___call_main, "___clock_gettime": ___clock_gettime, "___cxa_find_matching_catch": ___cxa_find_matching_catch, "___gxx_personality_v0": ___gxx_personality_v0, "___lock": ___lock, "___resumeException": ___resumeException, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall146": ___syscall146, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "___unlock": ___unlock, "__spawn_thread": __spawn_thread, "_abort": _abort, "_clock_gettime": _clock_gettime, "_eglChooseConfig": _eglChooseConfig, "_eglCreateContext": _eglCreateContext, "_eglCreateWindowSurface": _eglCreateWindowSurface, "_eglGetConfigs": _eglGetConfigs, "_eglGetDisplay": _eglGetDisplay, "_eglInitialize": _eglInitialize, "_eglMakeCurrent": _eglMakeCurrent, "_eglSwapBuffers": _eglSwapBuffers, "_emscripten_asm_const_i": _emscripten_asm_const_i, "_emscripten_async_call": _emscripten_async_call, "_emscripten_conditional_set_current_thread_status_js": _emscripten_conditional_set_current_thread_status_js, "_emscripten_futex_wait": _emscripten_futex_wait, "_emscripten_futex_wake": _emscripten_futex_wake, "_emscripten_get_canvas_element_size": _emscripten_get_canvas_element_size, "_emscripten_get_now": _emscripten_get_now, "_emscripten_get_now_is_monotonic": _emscripten_get_now_is_monotonic, "_emscripten_has_threading_support": _emscripten_has_threading_support, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_set_canvas_element_size": _emscripten_set_canvas_element_size, "_emscripten_set_click_callback": _emscripten_set_click_callback, "_emscripten_set_current_thread_status_js": _emscripten_set_current_thread_status_js, "_emscripten_set_main_loop": _emscripten_set_main_loop, "_emscripten_set_main_loop_timing": _emscripten_set_main_loop_timing, "_emscripten_set_mousedown_callback": _emscripten_set_mousedown_callback, "_emscripten_set_mousemove_callback": _emscripten_set_mousemove_callback, "_emscripten_set_mouseup_callback": _emscripten_set_mouseup_callback, "_emscripten_set_resize_callback": _emscripten_set_resize_callback, "_emscripten_set_scroll_callback": _emscripten_set_scroll_callback, "_emscripten_set_thread_name_js": _emscripten_set_thread_name_js, "_emscripten_set_wheel_callback": _emscripten_set_wheel_callback, "_emscripten_syscall": _emscripten_syscall, "_gettimeofday": _gettimeofday, "_glAttachShader": _glAttachShader, "_glBindAttribLocation": _glBindAttribLocation, "_glBindBuffer": _glBindBuffer, "_glBufferData": _glBufferData, "_glClear": _glClear, "_glClearColor": _glClearColor, "_glCompileShader": _glCompileShader, "_glCreateProgram": _glCreateProgram, "_glCreateShader": _glCreateShader, "_glDeleteProgram": _glDeleteProgram, "_glDeleteShader": _glDeleteShader, "_glDrawArrays": _glDrawArrays, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glGenBuffers": _glGenBuffers, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glGetProgramiv": _glGetProgramiv, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glGetShaderiv": _glGetShaderiv, "_glLinkProgram": _glLinkProgram, "_glShaderSource": _glShaderSource, "_glUseProgram": _glUseProgram, "_glVertexAttribPointer": _glVertexAttribPointer, "_glViewport": _glViewport, "_glutCreateWindow": _glutCreateWindow, "_glutInitDisplayMode": _glutInitDisplayMode, "_llvm_cos_f32": _llvm_cos_f32, "_llvm_sin_f32": _llvm_sin_f32, "_pthread_create": _pthread_create, "_pthread_getschedparam": _pthread_getschedparam, "DYNAMICTOP_PTR": DYNAMICTOP_PTR, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX };
+Module.asmLibraryArg = { "abort": abort, "assert": assert, "enlargeMemory": enlargeMemory, "getTotalMemory": getTotalMemory, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "abortStackOverflow": abortStackOverflow, "nullFunc_i": nullFunc_i, "nullFunc_ii": nullFunc_ii, "nullFunc_iii": nullFunc_iii, "nullFunc_iiii": nullFunc_iiii, "nullFunc_v": nullFunc_v, "nullFunc_vi": nullFunc_vi, "nullFunc_vif": nullFunc_vif, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_viiii": nullFunc_viiii, "nullFunc_viiiii": nullFunc_viiiii, "nullFunc_viiiiii": nullFunc_viiiiii, "invoke_i": invoke_i, "invoke_ii": invoke_ii, "invoke_iii": invoke_iii, "invoke_iiii": invoke_iiii, "invoke_v": invoke_v, "invoke_vi": invoke_vi, "invoke_vif": invoke_vif, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_viiii": invoke_viiii, "invoke_viiiii": invoke_viiiii, "invoke_viiiiii": invoke_viiiiii, "_XChangeWindowAttributes": _XChangeWindowAttributes, "_XCreateWindow": _XCreateWindow, "_XInternAtom": _XInternAtom, "_XMapWindow": _XMapWindow, "_XOpenDisplay": _XOpenDisplay, "_XSendEvent": _XSendEvent, "_XSetWMHints": _XSetWMHints, "_XStoreName": _XStoreName, "__ZSt18uncaught_exceptionv": __ZSt18uncaught_exceptionv, "___assert_fail": ___assert_fail, "___call_main": ___call_main, "___clock_gettime": ___clock_gettime, "___cxa_find_matching_catch": ___cxa_find_matching_catch, "___gxx_personality_v0": ___gxx_personality_v0, "___lock": ___lock, "___resumeException": ___resumeException, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall145": ___syscall145, "___syscall146": ___syscall146, "___syscall221": ___syscall221, "___syscall5": ___syscall5, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "___unlock": ___unlock, "__spawn_thread": __spawn_thread, "_abort": _abort, "_alBufferData": _alBufferData, "_alGenBuffers": _alGenBuffers, "_alGenSources": _alGenSources, "_alGetError": _alGetError, "_alGetSourcei": _alGetSourcei, "_alListener3f": _alListener3f, "_alListenerfv": _alListenerfv, "_alSource3f": _alSource3f, "_alSourcePlay": _alSourcePlay, "_alSourcef": _alSourcef, "_alSourcei": _alSourcei, "_alcCreateContext": _alcCreateContext, "_alcGetString": _alcGetString, "_alcIsExtensionPresent": _alcIsExtensionPresent, "_alcMakeContextCurrent": _alcMakeContextCurrent, "_alcOpenDevice": _alcOpenDevice, "_clock_gettime": _clock_gettime, "_eglChooseConfig": _eglChooseConfig, "_eglCreateContext": _eglCreateContext, "_eglCreateWindowSurface": _eglCreateWindowSurface, "_eglGetConfigs": _eglGetConfigs, "_eglGetDisplay": _eglGetDisplay, "_eglInitialize": _eglInitialize, "_eglMakeCurrent": _eglMakeCurrent, "_eglSwapBuffers": _eglSwapBuffers, "_emscripten_asm_const_i": _emscripten_asm_const_i, "_emscripten_async_call": _emscripten_async_call, "_emscripten_conditional_set_current_thread_status_js": _emscripten_conditional_set_current_thread_status_js, "_emscripten_futex_wait": _emscripten_futex_wait, "_emscripten_futex_wake": _emscripten_futex_wake, "_emscripten_get_canvas_element_size": _emscripten_get_canvas_element_size, "_emscripten_get_now": _emscripten_get_now, "_emscripten_get_now_is_monotonic": _emscripten_get_now_is_monotonic, "_emscripten_has_threading_support": _emscripten_has_threading_support, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_set_canvas_element_size": _emscripten_set_canvas_element_size, "_emscripten_set_click_callback": _emscripten_set_click_callback, "_emscripten_set_current_thread_status_js": _emscripten_set_current_thread_status_js, "_emscripten_set_main_loop": _emscripten_set_main_loop, "_emscripten_set_main_loop_timing": _emscripten_set_main_loop_timing, "_emscripten_set_mousedown_callback": _emscripten_set_mousedown_callback, "_emscripten_set_mousemove_callback": _emscripten_set_mousemove_callback, "_emscripten_set_mouseup_callback": _emscripten_set_mouseup_callback, "_emscripten_set_resize_callback": _emscripten_set_resize_callback, "_emscripten_set_scroll_callback": _emscripten_set_scroll_callback, "_emscripten_set_thread_name_js": _emscripten_set_thread_name_js, "_emscripten_set_wheel_callback": _emscripten_set_wheel_callback, "_emscripten_syscall": _emscripten_syscall, "_gettimeofday": _gettimeofday, "_glAttachShader": _glAttachShader, "_glBindAttribLocation": _glBindAttribLocation, "_glBindBuffer": _glBindBuffer, "_glBufferData": _glBufferData, "_glClear": _glClear, "_glClearColor": _glClearColor, "_glCompileShader": _glCompileShader, "_glCreateProgram": _glCreateProgram, "_glCreateShader": _glCreateShader, "_glDeleteProgram": _glDeleteProgram, "_glDeleteShader": _glDeleteShader, "_glDrawArrays": _glDrawArrays, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glGenBuffers": _glGenBuffers, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glGetProgramiv": _glGetProgramiv, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glGetShaderiv": _glGetShaderiv, "_glLinkProgram": _glLinkProgram, "_glShaderSource": _glShaderSource, "_glUseProgram": _glUseProgram, "_glVertexAttribPointer": _glVertexAttribPointer, "_glViewport": _glViewport, "_glutCreateWindow": _glutCreateWindow, "_glutInitDisplayMode": _glutInitDisplayMode, "_llvm_cos_f32": _llvm_cos_f32, "_llvm_sin_f32": _llvm_sin_f32, "_pthread_create": _pthread_create, "_pthread_getschedparam": _pthread_getschedparam, "DYNAMICTOP_PTR": DYNAMICTOP_PTR, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX };
 // EMSCRIPTEN_START_ASM
 var asm =Module["asm"]// EMSCRIPTEN_END_ASM
 (Module.asmGlobalArg, Module.asmLibraryArg, buffer);
@@ -8913,6 +10876,12 @@ var real__sbrk = asm["_sbrk"]; asm["_sbrk"] = function() {
   return real__sbrk.apply(null, arguments);
 };
 
+var real__test = asm["_test"]; asm["_test"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__test.apply(null, arguments);
+};
+
 var real_establishStackSpace = asm["establishStackSpace"]; asm["establishStackSpace"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -9163,6 +11132,10 @@ var _sbrk = Module["_sbrk"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return Module["asm"]["_sbrk"].apply(null, arguments) };
+var _test = Module["_test"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return Module["asm"]["_test"].apply(null, arguments) };
 var establishStackSpace = Module["establishStackSpace"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -9253,8 +11226,8 @@ Module['asm'] = asm;
 
 if (!Module["intArrayFromString"]) Module["intArrayFromString"] = function() { abort("'intArrayFromString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Module["intArrayToString"]) Module["intArrayToString"] = function() { abort("'intArrayToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
-if (!Module["ccall"]) Module["ccall"] = function() { abort("'ccall' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
-if (!Module["cwrap"]) Module["cwrap"] = function() { abort("'cwrap' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
+Module["ccall"] = ccall;
+Module["cwrap"] = cwrap;
 if (!Module["setValue"]) Module["setValue"] = function() { abort("'setValue' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Module["getValue"]) Module["getValue"] = function() { abort("'getValue' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Module["allocate"]) Module["allocate"] = function() { abort("'allocate' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)") };
