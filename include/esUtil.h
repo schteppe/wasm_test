@@ -1,25 +1,6 @@
-//
-// Book:      OpenGL(R) ES 2.0 Programming Guide
-// Authors:   Aaftab Munshi, Dan Ginsburg, Dave Shreiner
-// ISBN-10:   0321502795
-// ISBN-13:   9780321502797
-// Publisher: Addison-Wesley Professional
-// URLs:      http://safari.informit.com/9780321563835
-//            http://www.opengles-book.com
-//
-
-//
-/// \file ESUtil.h
-/// \brief A utility library for OpenGL ES.  This library provides a
-///        basic common framework for the example applications in the
-///        OpenGL ES 2.0 Programming Guide.
-//
 #ifndef ESUTIL_H
 #define ESUTIL_H
 
-///
-//  Includes
-//
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 
@@ -28,10 +9,6 @@
 extern "C" {
 #endif
 
-   
-///
-//  Macros
-//
 #define ESUTIL_API
 #define ESCALLBACK
 
@@ -47,10 +24,6 @@ extern "C" {
 /// esCreateWindow flat - multi-sample buffer
 #define ES_WINDOW_MULTISAMPLE   8
 
-
-///
-// Types
-//
 
 #ifndef FALSE
 #define FALSE 0
@@ -91,18 +64,13 @@ typedef struct _escontext
    void (ESCALLBACK *drawFunc) ( struct _escontext * );
    void (ESCALLBACK *keyFunc) ( struct _escontext *, unsigned char, int, int );
    void (ESCALLBACK *updateFunc) ( struct _escontext *, float deltaTime );
+    
+    float deltatime;
+    float totaltime;
+    unsigned int frames;
 } ESContext;
 
 
-///
-//  Public Functions
-//
-
-//
-///
-/// \brief Initialize ES framework context.  This must be called before calling any other functions.
-/// \param esContext Application context
-//
 void ESUTIL_API esInitContext ( ESContext *esContext );
 
 //
@@ -200,15 +168,6 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
 //
 int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals, 
                            GLfloat **texCoords, GLushort **indices );
-
-//
-/// \brief Loads a 24-bit TGA image from a file
-/// \param fileName Name of the file on disk
-/// \param width Width of loaded image in pixels
-/// \param height Height of loaded image in pixels
-///  \return Pointer to loaded image.  NULL on failure. 
-//
-char* ESUTIL_API esLoadTGA ( char *fileName, int *width, int *height );
 
 
 //

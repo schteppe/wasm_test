@@ -1,5 +1,8 @@
 #include <stdlib.h>
 #include "esUtil.h"
+#include  <emscripten.h>
+#include <emscripten/html5.h>
+#include <math.h>
 
 typedef struct
 {
@@ -120,15 +123,25 @@ int Init ( ESContext *esContext )
 void Draw ( ESContext *esContext )
 {
    UserData *userData = (UserData *)esContext->userData;
-   GLfloat vVertices[] = {  0.0f,  0.5f, 0.0f, 
-                           -0.5f, -0.5f, 0.0f,
-                            0.5f, -0.5f, 0.0f };
+   GLfloat vVertices[] = {
+       0.9f*sin(esContext->totaltime + 2.0f * 0.0f * float(M_PI) / 3.0f),
+       0.9f*cos(esContext->totaltime + 2.0f * 0.0f * float(M_PI) / 3.0f),
+       0.0f,
+
+       0.9f*sin(esContext->totaltime + 2.0f * 1.0f * float(M_PI) / 3.0f),
+       0.9f*cos(esContext->totaltime + 2.0f * 1.0f * float(M_PI) / 3.0f),
+       0.0f, 
+
+       0.9f*sin(esContext->totaltime + 2.0f * 2.0f * float(M_PI) / 3.0f),
+       0.9f*cos(esContext->totaltime + 2.0f * 2.0f * float(M_PI) / 3.0f),
+       0.0f
+   };
 
    // No clientside arrays, so do this in a webgl-friendly manner
    GLuint vertexPosObject;
    glGenBuffers(1, &vertexPosObject);
    glBindBuffer(GL_ARRAY_BUFFER, vertexPosObject);
-   glBufferData(GL_ARRAY_BUFFER, 9*4, vVertices, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, 9*4, vVertices, GL_DYNAMIC_DRAW);
    
    glViewport ( 0, 0, esContext->width, esContext->height );
    glClear ( GL_COLOR_BUFFER_BIT );
@@ -149,7 +162,9 @@ int main ( int argc, char *argv[] )
    esInitContext ( &esContext );
    esContext.userData = &userData;
 
-   esCreateWindow ( &esContext, "Hello Triangle", 320, 240, ES_WINDOW_RGB );
+   int width, height;
+   emscripten_get_canvas_element_size("canvas", &width, &height);
+   esCreateWindow ( &esContext, "Hello Triangle", width, height, ES_WINDOW_RGB );
 
    if ( !Init ( &esContext ) )
       return 0;

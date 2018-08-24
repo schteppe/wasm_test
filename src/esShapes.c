@@ -1,56 +1,10 @@
-//
-// Book:      OpenGL(R) ES 2.0 Programming Guide
-// Authors:   Aaftab Munshi, Dan Ginsburg, Dave Shreiner
-// ISBN-10:   0321502795
-// ISBN-13:   9780321502797
-// Publisher: Addison-Wesley Professional
-// URLs:      http://safari.informit.com/9780321563835
-//            http://www.opengles-book.com
-//
-
-// ESShapes.c
-//
-//    Utility functions for generating shapes
-//
-
-///
-//  Includes
-//
 #include "esUtil.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
-///
-// Defines
-//
 #define ES_PI  (3.14159265f)
 
-//////////////////////////////////////////////////////////////////
-//
-//  Private Functions
-//
-//
-
-
-
-//////////////////////////////////////////////////////////////////
-//
-//  Public Functions
-//
-//
-
-//
-/// \brief Generates geometry for a sphere.  Allocates memory for the vertex data and stores 
-///        the results in the arrays.  Generate index list for a TRIANGLE_STRIP
-/// \param numSlices The number of slices in the sphere
-/// \param vertices If not NULL, will contain array of float3 positions
-/// \param normals If not NULL, will contain array of float3 normals
-/// \param texCoords If not NULL, will contain array of float2 texCoords
-/// \param indices If not NULL, will contain the array of indices for the triangle strip
-/// \return The number of indices required for rendering the buffers (the number of indices stored in the indices array
-///         if it is not NULL ) as a GL_TRIANGLE_STRIP
-//
 int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GLfloat **normals, 
                              GLfloat **texCoords, GLushort **indices )
 {

@@ -1755,7 +1755,7 @@ var ASM_CONSTS = [];
 
 STATIC_BASE = GLOBAL_BASE;
 
-STATICTOP = STATIC_BASE + 6160;
+STATICTOP = STATIC_BASE + 6272;
 /* global initializers */  __ATINIT__.push();
 
 
@@ -1764,7 +1764,7 @@ STATICTOP = STATIC_BASE + 6160;
 
 
 
-var STATIC_BUMP = 6160;
+var STATIC_BUMP = 6272;
 Module["STATIC_BASE"] = STATIC_BASE;
 Module["STATIC_BUMP"] = STATIC_BUMP;
 
@@ -2698,6 +2698,10 @@ function copyTempDouble(ptr) {
   }
 
   function ___unlock() {}
+
+  function _abort() {
+      Module['abort']();
+    }
 
   
   var EGL={errorCode:12288,defaultDisplayInitialized:false,currentContext:0,currentReadSurface:0,currentDrawSurface:0,stringCache:{},setErrorCode:function (code) {
@@ -4296,9 +4300,67 @@ function copyTempDouble(ptr) {
           useCapture: useCapture
         };
         JSEvents.registerOrRemoveHandler(eventHandler);
-      }};function _emscripten_set_mousemove_callback(target, userData, useCapture, callbackfunc) {
+      }};function _emscripten_get_canvas_element_size(target, width, height) {
+      if (target) target = JSEvents.findEventTarget(target);
+      else target = Module['canvas'];
+      if (!target) return -4;
+  
+      HEAP32[((width)>>2)]=target.width;
+      HEAP32[((height)>>2)]=target.height;
+      return 0;
+    }
+
+  function _emscripten_set_canvas_element_size(target, width, height) {
+      if (target) target = JSEvents.findEventTarget(target);
+      else target = Module['canvas'];
+      if (!target) return -4;
+  
+      target.width = width;
+      target.height = height;
+      return 0;
+    }
+
+  function _emscripten_set_click_callback(target, userData, useCapture, callbackfunc) {
+      JSEvents.registerMouseEventCallback(target, userData, useCapture, callbackfunc, 4, "click");
+      return 0;
+    }
+
+  function _emscripten_set_mousedown_callback(target, userData, useCapture, callbackfunc) {
+      JSEvents.registerMouseEventCallback(target, userData, useCapture, callbackfunc, 5, "mousedown");
+      return 0;
+    }
+
+  function _emscripten_set_mousemove_callback(target, userData, useCapture, callbackfunc) {
       JSEvents.registerMouseEventCallback(target, userData, useCapture, callbackfunc, 8, "mousemove");
       return 0;
+    }
+
+  function _emscripten_set_mouseup_callback(target, userData, useCapture, callbackfunc) {
+      JSEvents.registerMouseEventCallback(target, userData, useCapture, callbackfunc, 6, "mouseup");
+      return 0;
+    }
+
+  function _emscripten_set_resize_callback(target, userData, useCapture, callbackfunc) {
+      JSEvents.registerUiEventCallback(target, userData, useCapture, callbackfunc, 10, "resize");
+      return 0;
+    }
+
+  function _emscripten_set_scroll_callback(target, userData, useCapture, callbackfunc) {
+      JSEvents.registerUiEventCallback(target, userData, useCapture, callbackfunc, 11, "scroll");
+      return 0;
+    }
+
+  function _emscripten_set_wheel_callback(target, userData, useCapture, callbackfunc) {
+      target = JSEvents.findEventTarget(target);
+      if (typeof target.onwheel !== 'undefined') {
+        JSEvents.registerWheelEventCallback(target, userData, useCapture, callbackfunc, 9, "wheel");
+        return 0;
+      } else if (typeof target.onmousewheel !== 'undefined') {
+        JSEvents.registerWheelEventCallback(target, userData, useCapture, callbackfunc, 9, "mousewheel");
+        return 0;
+      } else {
+        return -1;
+      }
     }
 
   function _gettimeofday(ptr) {
@@ -4524,6 +4586,10 @@ function copyTempDouble(ptr) {
 
    
 
+  var _llvm_cos_f32=Math_cos;
+
+  var _llvm_sin_f32=Math_sin;
+
   
   function _emscripten_memcpy_big(dest, src, num) {
       HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
@@ -4662,7 +4728,7 @@ function invoke_vif(index,a1,a2) {
 
 Module.asmGlobalArg = {};
 
-Module.asmLibraryArg = { "abort": abort, "assert": assert, "enlargeMemory": enlargeMemory, "getTotalMemory": getTotalMemory, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "abortStackOverflow": abortStackOverflow, "nullFunc_ii": nullFunc_ii, "nullFunc_iiii": nullFunc_iiii, "nullFunc_vi": nullFunc_vi, "nullFunc_vif": nullFunc_vif, "invoke_ii": invoke_ii, "invoke_iiii": invoke_iiii, "invoke_vi": invoke_vi, "invoke_vif": invoke_vif, "_XChangeWindowAttributes": _XChangeWindowAttributes, "_XCreateWindow": _XCreateWindow, "_XInternAtom": _XInternAtom, "_XMapWindow": _XMapWindow, "_XOpenDisplay": _XOpenDisplay, "_XSendEvent": _XSendEvent, "_XSetWMHints": _XSetWMHints, "_XStoreName": _XStoreName, "___lock": ___lock, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall146": ___syscall146, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "___unlock": ___unlock, "_eglChooseConfig": _eglChooseConfig, "_eglCreateContext": _eglCreateContext, "_eglCreateWindowSurface": _eglCreateWindowSurface, "_eglGetConfigs": _eglGetConfigs, "_eglGetDisplay": _eglGetDisplay, "_eglInitialize": _eglInitialize, "_eglMakeCurrent": _eglMakeCurrent, "_eglSwapBuffers": _eglSwapBuffers, "_emscripten_async_call": _emscripten_async_call, "_emscripten_get_now": _emscripten_get_now, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_set_main_loop": _emscripten_set_main_loop, "_emscripten_set_main_loop_timing": _emscripten_set_main_loop_timing, "_emscripten_set_mousemove_callback": _emscripten_set_mousemove_callback, "_gettimeofday": _gettimeofday, "_glAttachShader": _glAttachShader, "_glBindAttribLocation": _glBindAttribLocation, "_glBindBuffer": _glBindBuffer, "_glBufferData": _glBufferData, "_glClear": _glClear, "_glClearColor": _glClearColor, "_glCompileShader": _glCompileShader, "_glCreateProgram": _glCreateProgram, "_glCreateShader": _glCreateShader, "_glDeleteProgram": _glDeleteProgram, "_glDeleteShader": _glDeleteShader, "_glDrawArrays": _glDrawArrays, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glGenBuffers": _glGenBuffers, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glGetProgramiv": _glGetProgramiv, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glGetShaderiv": _glGetShaderiv, "_glLinkProgram": _glLinkProgram, "_glShaderSource": _glShaderSource, "_glUseProgram": _glUseProgram, "_glVertexAttribPointer": _glVertexAttribPointer, "_glViewport": _glViewport, "_glutCreateWindow": _glutCreateWindow, "_glutInitDisplayMode": _glutInitDisplayMode, "flush_NO_FILESYSTEM": flush_NO_FILESYSTEM, "DYNAMICTOP_PTR": DYNAMICTOP_PTR, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX };
+Module.asmLibraryArg = { "abort": abort, "assert": assert, "enlargeMemory": enlargeMemory, "getTotalMemory": getTotalMemory, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "abortStackOverflow": abortStackOverflow, "nullFunc_ii": nullFunc_ii, "nullFunc_iiii": nullFunc_iiii, "nullFunc_vi": nullFunc_vi, "nullFunc_vif": nullFunc_vif, "invoke_ii": invoke_ii, "invoke_iiii": invoke_iiii, "invoke_vi": invoke_vi, "invoke_vif": invoke_vif, "_XChangeWindowAttributes": _XChangeWindowAttributes, "_XCreateWindow": _XCreateWindow, "_XInternAtom": _XInternAtom, "_XMapWindow": _XMapWindow, "_XOpenDisplay": _XOpenDisplay, "_XSendEvent": _XSendEvent, "_XSetWMHints": _XSetWMHints, "_XStoreName": _XStoreName, "___lock": ___lock, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall146": ___syscall146, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "___unlock": ___unlock, "_abort": _abort, "_eglChooseConfig": _eglChooseConfig, "_eglCreateContext": _eglCreateContext, "_eglCreateWindowSurface": _eglCreateWindowSurface, "_eglGetConfigs": _eglGetConfigs, "_eglGetDisplay": _eglGetDisplay, "_eglInitialize": _eglInitialize, "_eglMakeCurrent": _eglMakeCurrent, "_eglSwapBuffers": _eglSwapBuffers, "_emscripten_async_call": _emscripten_async_call, "_emscripten_get_canvas_element_size": _emscripten_get_canvas_element_size, "_emscripten_get_now": _emscripten_get_now, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_set_canvas_element_size": _emscripten_set_canvas_element_size, "_emscripten_set_click_callback": _emscripten_set_click_callback, "_emscripten_set_main_loop": _emscripten_set_main_loop, "_emscripten_set_main_loop_timing": _emscripten_set_main_loop_timing, "_emscripten_set_mousedown_callback": _emscripten_set_mousedown_callback, "_emscripten_set_mousemove_callback": _emscripten_set_mousemove_callback, "_emscripten_set_mouseup_callback": _emscripten_set_mouseup_callback, "_emscripten_set_resize_callback": _emscripten_set_resize_callback, "_emscripten_set_scroll_callback": _emscripten_set_scroll_callback, "_emscripten_set_wheel_callback": _emscripten_set_wheel_callback, "_gettimeofday": _gettimeofday, "_glAttachShader": _glAttachShader, "_glBindAttribLocation": _glBindAttribLocation, "_glBindBuffer": _glBindBuffer, "_glBufferData": _glBufferData, "_glClear": _glClear, "_glClearColor": _glClearColor, "_glCompileShader": _glCompileShader, "_glCreateProgram": _glCreateProgram, "_glCreateShader": _glCreateShader, "_glDeleteProgram": _glDeleteProgram, "_glDeleteShader": _glDeleteShader, "_glDrawArrays": _glDrawArrays, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glGenBuffers": _glGenBuffers, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glGetProgramiv": _glGetProgramiv, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glGetShaderiv": _glGetShaderiv, "_glLinkProgram": _glLinkProgram, "_glShaderSource": _glShaderSource, "_glUseProgram": _glUseProgram, "_glVertexAttribPointer": _glVertexAttribPointer, "_glViewport": _glViewport, "_glutCreateWindow": _glutCreateWindow, "_glutInitDisplayMode": _glutInitDisplayMode, "_llvm_cos_f32": _llvm_cos_f32, "_llvm_sin_f32": _llvm_sin_f32, "flush_NO_FILESYSTEM": flush_NO_FILESYSTEM, "DYNAMICTOP_PTR": DYNAMICTOP_PTR, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX };
 // EMSCRIPTEN_START_ASM
 var asm =Module["asm"]// EMSCRIPTEN_END_ASM
 (Module.asmGlobalArg, Module.asmLibraryArg, buffer);
@@ -5150,7 +5216,7 @@ run();
 
 
 
-// {{MODULE_ADDITIONS}}
+//# sourceMappingURL=index.wasm.map
 
 
 

@@ -73,7 +73,7 @@ EGLBoolean CreateEGLContext ( EGLNativeWindowType hWnd, EGLDisplay* eglDisplay,
    {
       return EGL_FALSE;
    }
-   
+
    *eglDisplay = display;
    *eglSurface = surface;
    *eglContext = context;
@@ -101,7 +101,6 @@ EGLBoolean WinCreate(ESContext *esContext, const char *title)
     /*
      * X11 native display initialization
      */
-
     x_display = XOpenDisplay(NULL);
     if ( x_display == NULL )
     {
@@ -183,18 +182,6 @@ GLboolean userInterrupt(ESContext *esContext)
 }
 
 
-//////////////////////////////////////////////////////////////////
-//
-//  Public Functions
-//
-//
-
-///
-//  esInitContext()
-//
-//      Initialize ES utility context.  This must be called before calling any other
-//      functions.
-//
 void ESUTIL_API esInitContext ( ESContext *esContext )
 {
    if ( esContext != NULL )
@@ -237,6 +224,10 @@ GLboolean ESUTIL_API esCreateWindow ( ESContext *esContext, const char* title, G
 
    esContext->width = width;
    esContext->height = height;
+   
+   esContext->deltatime = 0.0f;
+   esContext->totaltime = 0.0f;
+   esContext->frames = 0;
 
    if ( !WinCreate ( esContext, title) )
    {
@@ -259,57 +250,86 @@ GLboolean ESUTIL_API esCreateWindow ( ESContext *esContext, const char* title, G
 
 struct timeval t1, t2;
 struct timezone tz;
-float deltatime;
-float totaltime = 0.0f;
-unsigned int frames = 0;
 
 void update(void* data){
     ESContext *esContext = (ESContext*)data;
 
-    gettimeofday ( &t1 , &tz );
-
-    // Just one iteration! while(userInterrupt(esContext) == GL_FALSE)
-    {
-        gettimeofday(&t2, &tz);
-        deltatime = (float)(t2.tv_sec - t1.tv_sec + (t2.tv_usec - t1.tv_usec) * 1e-6);
+    gettimeofday(&t2, &tz);
+    if(esContext->frames == 0){
         t1 = t2;
-
-        if (esContext->updateFunc != NULL)
-            esContext->updateFunc(esContext, deltatime);
-        if (esContext->drawFunc != NULL)
-            esContext->drawFunc(esContext);
-
-        eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);
-
-        totaltime += deltatime;
-        frames++;
-        //if (totaltime >  2.0f)
-        {
-            //printf("%4d frames rendered in %1.4f seconds -> FPS=%3.4f\n", frames, totaltime, frames/totaltime);
-            totaltime -= 2.0f;
-            frames = 0;
-        }
     }
-    
+    esContext->deltatime = (float)(t2.tv_sec - t1.tv_sec + (t2.tv_usec - t1.tv_usec) * 1e-6);
+    t1 = t2;
+
+    if (esContext->updateFunc != NULL)
+        esContext->updateFunc(esContext, esContext->deltatime);
+    if (esContext->drawFunc != NULL)
+        esContext->drawFunc(esContext);
+
+    eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);
+
+    esContext->totaltime += esContext->deltatime;
+    esContext->frames++;
+
     emscripten_async_call(update, (void*)esContext, -1);
 }
 
 
 EM_BOOL mouseMoveCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData){
-    printf("asd\n");
+    printf("mousemove %ld %ld\n", mouseEvent->canvasX, mouseEvent->canvasY);
+    return false;
+}
+
+EM_BOOL mouseDownCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData){
+    printf("mousedown %ld %ld\n", mouseEvent->canvasX, mouseEvent->canvasY);
+    return false;
+}
+
+EM_BOOL mouseUpCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData){
+    printf("mouseup %ld %ld\n", mouseEvent->canvasX, mouseEvent->canvasY);
+    return false;
+}
+
+EM_BOOL mouseClickCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData){
+    printf("click %ld %ld\n", mouseEvent->canvasX, mouseEvent->canvasY);
+    return false;
+}
+
+EM_BOOL resizeCallback(int eventType, const EmscriptenUiEvent *event, void *userData){
+    printf("resize %d %d\n", event->windowInnerWidth, event->windowInnerHeight);
+    //emscripten_set_element_css_size("canvas", event->windowInnerWidth, event->windowInnerHeight);
+    emscripten_set_canvas_element_size("canvas", event->windowInnerWidth, event->windowInnerHeight);
+    
+    ESContext* esContext = (ESContext*)userData;
+    esContext->width = event->windowInnerWidth;
+    esContext->height = event->windowInnerHeight;
+
+    return false;
+}
+
+EM_BOOL scrollCallback(int eventType, const EmscriptenUiEvent *event, void *userData){
+    printf("scroll %ld\n", event->detail);
+    return false;
+}
+
+EM_BOOL wheelCallback(int eventType, const EmscriptenWheelEvent *event, void *userData){
+    printf("wheel %lf %lf %lf\n", event->deltaX, event->deltaY, event->deltaZ);
     return false;
 }
 
 
-
 void ESUTIL_API esMainLoop ( ESContext *esContext )
 {
-    EM_BOOL useCapture = false;
-    EMSCRIPTEN_RESULT result = emscripten_set_mousemove_callback(
-        "canvas",
-        nullptr,
-        useCapture,
-        mouseMoveCallback);
+    emscripten_set_mousemove_callback("canvas",esContext,false,mouseMoveCallback);
+    emscripten_set_mousedown_callback("canvas",esContext,false,mouseDownCallback);
+    emscripten_set_mouseup_callback("canvas",esContext,false,mouseUpCallback);
+    emscripten_set_click_callback("canvas",esContext,false,mouseClickCallback);
+    
+    emscripten_set_resize_callback(nullptr,esContext,false,resizeCallback);
+    emscripten_set_scroll_callback(nullptr,esContext,false,scrollCallback);
+
+    emscripten_set_wheel_callback("canvas",esContext,false,wheelCallback);
+
     emscripten_async_call(update, (void*)esContext, -1);
 }
 
@@ -341,55 +361,4 @@ void ESUTIL_API esLogMessage ( const char *formatStr, ... )
     printf ( "%s", buf );
     
     va_end ( params );
-}
-
-
-///
-// esLoadTGA()
-//
-//    Loads a 24-bit TGA image from a file. This is probably the simplest TGA loader ever.
-//    Does not support loading of compressed TGAs nor TGAa with alpha channel. But for the
-//    sake of the examples, this is sufficient.
-//
-
-char* ESUTIL_API esLoadTGA ( char *fileName, int *width, int *height )
-{
-    char *buffer = NULL;
-    FILE *f;
-    unsigned char tgaheader[12];
-    unsigned char attributes[6];
-    unsigned int imagesize;
-
-    f = fopen(fileName, "rb");
-    if(f == NULL) return NULL;
-
-    if(fread(&tgaheader, sizeof(tgaheader), 1, f) == 0)
-    {
-        fclose(f);
-        return NULL;
-    }
-
-    if(fread(attributes, sizeof(attributes), 1, f) == 0)
-    {
-        fclose(f);
-        return 0;
-    }
-
-    *width = attributes[1] * 256 + attributes[0];
-    *height = attributes[3] * 256 + attributes[2];
-    imagesize = attributes[4] / 8 * *width * *height;
-    buffer = (char*)malloc(imagesize);
-    if (buffer == NULL)
-    {
-        fclose(f);
-        return 0;
-    }
-
-    if(fread(buffer, 1, imagesize, f) != imagesize)
-    {
-        free(buffer);
-        return NULL;
-    }
-    fclose(f);
-    return buffer;
 }
